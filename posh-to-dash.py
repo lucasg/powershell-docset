@@ -150,7 +150,7 @@ if __name__ == '__main__':
     modules = filter(lambda x : os.path.isdir(x), map(lambda y: os.path.join(document_dir, y), os.listdir(document_dir)))
     for module in modules:
         module_name = os.path.basename(module)
-        update_db(db, cur, module_name, "Module", "Contents/Resources/Documents/%s/index.html" % module_name)
+        update_db(db, cur, module_name, "Module", "%s/index.html" % module_name)
 
         for f in filter(lambda x : os.path.isfile(os.path.join(document_dir, module_name, x)), os.listdir(module)):
             
@@ -159,7 +159,7 @@ if __name__ == '__main__':
                 continue
 
             cmdlet_name, html_ext = os.path.splitext(cmdlet_filename)
-            update_db(db, cur, cmdlet_name, "Cmdlet", "Contents/Resources/Documents/%s/%s" % (module_name, cmdlet_filename))
+            update_db(db, cur, cmdlet_name, "Cmdlet", "%s/%s" % (module_name, cmdlet_filename))
 
     # # commit and close db
     db.commit()
