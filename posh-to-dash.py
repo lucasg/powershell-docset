@@ -147,19 +147,24 @@ if __name__ == '__main__':
     cur.execute('CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);')
     cur.execute('CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);')
 
-    modules = filter(lambda x : os.path.isdir(x), map(lambda y: os.path.join(document_dir, y), os.listdir(document_dir)))
+    module_dir = os.path.join(document_dir, "docs.microsoft.com/en-US/powershell/module/")
+    modules = filter(lambda x : os.path.isdir(x), map(lambda y: os.path.join(module_dir, y), os.listdir(module_dir)))
     for module in modules:
-        module_name = os.path.basename(module)
-        update_db(db, cur, module_name, "Module", "%s/index.html" % module_name)
 
-        for f in filter(lambda x : os.path.isfile(os.path.join(document_dir, module_name, x)), os.listdir(module)):
+        module_name = os.path.basename(module)
+        # search replace <a href="(\w+-\w+)\?view=powershell-6" data-linktype="relative-path"> by <a href="$1.html" data-linktype="relative-path">
+
+        update_db(db, cur, module_name, "Module", "docs.microsoft.com/en-US/powershell/module/%s/index.html" % module_name)
+
+        for f in filter(lambda x : os.path.isfile(os.path.join(module_dir, module_name, x)), os.listdir(module)):
             
             cmdlet_filename = os.path.basename(f)
             if cmdlet_filename == "index.html":
                 continue
 
             cmdlet_name, html_ext = os.path.splitext(cmdlet_filename)
-            update_db(db, cur, cmdlet_name, "Cmdlet", "%s/%s" % (module_name, cmdlet_filename))
+            update_db(db, cur, cmdlet_name, "Cmdlet", "docs.microsoft.com/en-US/powershell/module/%s/%s" % (module_name, cmdlet_filename))
+        
 
     # # commit and close db
     db.commit()

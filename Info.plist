@@ -11,14 +11,14 @@
 	<key>DashDocSetFallbackURL</key>
 	<string>https://docs.microsoft.com/en-US/powershell/module/</string>
 
+	<key>dashIndexFilePath</key>
+	<string>docs.microsoft.com/en-US/powershell/module/index.html</string>
+
 	<key>DashDocSetFamily</key>
 	<string>posh</string>
 
 	<key>DocSetPlatformFamily</key>
 	<string>posh</string>
-
-	<key>dashIndexFilePath</key>
-	<string>index.html</string>
 
 	<key>isDashDocset</key>
 	<false/>
