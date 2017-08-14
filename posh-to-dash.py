@@ -125,6 +125,8 @@ def download_and_fix_links(url, output_filepath, posh_version = posh_version, is
         ["div", { "class" : "dropdown dropdown-full mobilenavi"}],
         ["p", { "class" : "api-browser-description"}],
         ["div", { "class" : "api-browser-search-field-container"}],
+        ["div", { "class" : "pageActions"}],
+        ["div", { "class" : "dropdown-container"}],
     ]
 
     for nav in nav_elements:
