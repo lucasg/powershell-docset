@@ -84,7 +84,7 @@ def update_db(db, cur, name, typ, path):
 
         if dbpath is None and dbname is None:
             cur.execute('INSERT OR IGNORE INTO searchIndex(name, type, path) VALUES (?,?,?)', (name, typ, path))
-            logging.debug('DB add >> name: %s, path: %s' % (name, path))
+            logging.debug('DB add [%s] >> name: %s, path: %s' % (typ, name, path))
         else:
             logging.debug('record exists')
 
