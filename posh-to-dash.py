@@ -167,12 +167,14 @@ def main(build_dir, dest_dir, args):
     shutil.copy("LICENSE", resources_dir)
 
 
-    # Crawl and download powershell modules documentation
-    crawl_posh_documentation(document_dir)
+    if not args.local:
+        # Crawl and download powershell modules documentation
+        crawl_posh_documentation(document_dir, posh_version = args.version)
 
-    # Download icon for package
-    download_binary("https://github.com/PowerShell/PowerShell/raw/master/assets/Powershell_16.png", os.path.join(docset_dir, "icon.png"))
-    download_binary("https://github.com/PowerShell/PowerShell/raw/master/assets/Powershell_32.png", os.path.join(docset_dir, "icon@2x.png"))
+        # Download icon for package
+        download_binary("https://github.com/PowerShell/PowerShell/raw/master/assets/Powershell_16.png", os.path.join(docset_dir, "icon.png"))
+        download_binary("https://github.com/PowerShell/PowerShell/raw/master/assets/Powershell_32.png", os.path.join(docset_dir, "icon@2x.png"))
+
 
     # Create database and index html doc
     sqlite_filepath = os.path.join(resources_dir, "docSet.dsidx")
