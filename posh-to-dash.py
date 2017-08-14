@@ -38,10 +38,10 @@ def download_textfile(url, output_filename):
     with open(output_filename, 'w', encoding="utf8") as f:
         f.write(r.text)
 
-def download_and_fix_module_index(module_url, module_dir):
+def download_and_fix_links(url, output_filepath, posh_version = posh_version):
     """ Download and fix broken nav paths for modules index """
 
-    r = requests.get(module_url)
+    r = requests.get(url)
     index_html = r.text
 
     soup = bs(index_html, 'html.parser')
@@ -49,7 +49,8 @@ def download_and_fix_module_index(module_url, module_dir):
 
         # search replace <a href="(\w+-\w+)\?view=powershell-6" data-linktype="relative-path">
         #                <a href="$1.html" data-linktype="relative-path">
-        link_pattern = re.compile(r"(\w+-\w+)\?view=powershell-6")
+        link_str_pattern = "(\w+-\w+)\?view=powershell-%s" % posh_version
+        link_pattern = re.compile(link_str_pattern)
         targets = link_pattern.findall(link['href'])
         if not len(targets): # badly formated 'a' link
             continue
@@ -59,8 +60,7 @@ def download_and_fix_module_index(module_url, module_dir):
         link.replaceWith(fixed_link)
 
     # Export fixed html
-    module_filepath = os.path.join(module_dir, "index.html")
-    with open(module_filepath, 'wb') as o_index:
+    with open(output_filepath, 'wb') as o_index:
 
         fixed_html = soup.prettify("utf-8")
         o_index.write(fixed_html)
@@ -89,7 +89,8 @@ def crawl_posh_documentation(documents_folder, posh_version = posh_version):
             module_dir = os.path.join(documents_folder, base_url, module['toc_title'])
 
             os.makedirs(module_dir, exist_ok = True)
-            download_and_fix_module_index(module_url, module_dir)
+            module_filepath = os.path.join(module_dir, "index.html")
+            download_and_fix_links(module_url, module_filepath)
             
             for cmdlet in module['children']:
                 cmdlet_name = cmdlet['toc_title']
@@ -101,8 +102,7 @@ def crawl_posh_documentation(documents_folder, posh_version = posh_version):
                 cmdlet_url = urllib.parse.urljoin(modules_toc, cmdlet_urlpath)
 
                 cmdlet_filepath = os.path.join(module_dir, "%s.html" % cmdlet_name)
-                download_textfile(cmdlet_url, cmdlet_filepath)
-            
+                download_and_fix_links(cmdlet_url, cmdlet_filepath, posh_version = posh_version)            
 
 
 
