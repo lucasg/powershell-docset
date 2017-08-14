@@ -62,7 +62,7 @@ def download_as_browser(url, output_filename):
     
 
 
-def download_and_fix_links(url, output_filepath, posh_version = posh_version, is_index =  False):
+def download_and_fix_links(url, output_filepath, posh_version = posh_version, is_index =  False, documents_folder = None):
     """ Download and fix broken nav paths for modules index """
     global global_driver
     # r = requests.get(url)
@@ -133,6 +133,8 @@ def download_and_fix_links(url, output_filepath, posh_version = posh_version, is
         for nav_tag in soup.findAll(nav_class, nav_attr):
             _ = nav_tag.extract()
 
+    # Fix themes uri paths
+    soup = crawl_posh_themes(documents_folder, soup, output_filepath)
 
     # Export fixed html
     with open(output_filepath, 'wb') as o_index:
@@ -144,16 +146,15 @@ def download_and_fix_links(url, output_filepath, posh_version = posh_version, is
     return index_html
 
         
-def crawl_posh_themes(documents_folder, current_html):
+def crawl_posh_themes(documents_folder, soup, current_filepath):
     
     theme_output_dir = os.path.join(documents_folder, domain)
-    soup = bs(current_html, 'html.parser')
 
     # downloading stylesheets
     for link in soup.findAll("link", { "rel" : "stylesheet"}):
         uri_path = link['href'].strip()
 
-        if default_theme_uri in link['href']:
+        if uri_path.lstrip('/').startswith(default_theme_uri):
 
             css_url = "https://%s/%s" % (domain, uri_path)
             css_filepath =  os.path.join(theme_output_dir, uri_path.lstrip('/'))
@@ -172,6 +173,11 @@ def crawl_posh_themes(documents_folder, current_html):
                 r = re.compile("\w+\.([\w\.]+)")
                 sourcemap_css_filename = r.match(css_filename).groups()[0]
                 download_textfile(css_url, os.path.join(css_dirname, sourcemap_css_filename))
+
+            # Converting to a relative link
+            path = os.path.relpath(css_filepath, os.path.dirname(current_filepath))
+            rel_uri = '/'.join(path.split(os.sep))
+            link['href'] = rel_uri
 
     # downloading scripts
     for script in soup.findAll("script", {"src":True}):
@@ -192,8 +198,13 @@ def crawl_posh_themes(documents_folder, current_html):
             # do not download twice the same file
             if not os.path.exists(script_filepath):
                 download_textfile(script_url, script_filepath)
-    
 
+            # Converting to a relative link
+            path = os.path.relpath(script_filepath, current_filepath)
+            rel_uri = '/'.join(path.split(os.sep))
+            script['src'] = rel_uri
+    
+    return soup
 
 
 def crawl_posh_documentation(documents_folder, posh_version = posh_version):
@@ -203,10 +214,7 @@ def crawl_posh_documentation(documents_folder, posh_version = posh_version):
     modules_toc = default_toc % (posh_version, posh_version)
 
     index_filepath = os.path.join(documents_folder, domain, "en-us", "index.html")
-    download_and_fix_links(index, index_filepath, is_index= True)
-
-    with open(index_filepath, 'r') as index_html_page:
-        crawl_posh_themes(documents_folder, index_html_page.read())
+    download_and_fix_links(index, index_filepath, is_index= True, posh_version = posh_version, documents_folder = documents_folder)        
 
     modules_filepath = os.path.join(documents_folder, "modules.toc")
     download_textfile(modules_toc, modules_filepath)
@@ -226,22 +234,22 @@ def crawl_posh_documentation(documents_folder, posh_version = posh_version):
             module_filepath = os.path.join(module_dir, "index.html")
 
             logging.debug("downloading modules doc %s -> %s" %(module_url, module_filepath))
-            mod_html = download_and_fix_links(module_url, module_filepath)
-            crawl_posh_themes(documents_folder, mod_html)
-            
+            mod_html = download_and_fix_links(module_url, module_filepath, posh_version = posh_version, documents_folder = documents_folder)
+
             for cmdlet in module['children']:
                 cmdlet_name = cmdlet['toc_title']
                 
-                if cmdlet_name == "About" or cmdlet_name == "Providers": # skip special toc
+                if cmdlet_name.lower() in ("about", "functions", "providers", "provider"): # skip special toc
                     continue
-
+                
+                logging.debug("cmdlet %s" % cmdlet)
                 cmdlet_urlpath = cmdlet["href"]
                 cmdlet_url = urllib.parse.urljoin(modules_toc, cmdlet_urlpath)
                 cmdlet_filepath = os.path.join(module_dir, "%s.html" % cmdlet_name)
 
                 logging.debug("downloading cmdlet doc %s -> %s" %(cmdlet_url, cmdlet_filepath))
-                cmdlet_html = download_and_fix_links(cmdlet_url, cmdlet_filepath, posh_version = posh_version)            
-                crawl_posh_themes(documents_folder, cmdlet_html)
+                cmdlet_html = download_and_fix_links(cmdlet_url, cmdlet_filepath, posh_version = posh_version, documents_folder = documents_folder)
+                
 
 def insert_into_sqlite_db(cursor, name, record_type, path):
     """ Insert a new unique record in the sqlite database. """
