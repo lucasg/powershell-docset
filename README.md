@@ -1,11 +1,10 @@
-# powershell-docset : A dash docset for powershell modules : https://docs.microsoft.com/en-us/powershell/module/
-==================================
+# powershell-docset : A dash docset for powershell modules
 
 `posh-to-dash.py` scrapes the newly announced `https://docs.microsoft.com/en-us/powershell/module/` website in order to create an offline dash-compatible archive to be view on `Dash`, `Zeal` or `Velocity` :
 
 
 <p align="center">
-<img alt="Powershell docset in Velocity" src="screenshots/posh-docset.png"/>
+<img alt="Powershell docset in Velocity" src="screenshots/posh-docset.PNG"/>
 </p>
 
 ## Releases
