@@ -6,6 +6,8 @@ import shutil
 import logging
 import json
 import tarfile
+import tempfile
+import argparse
 import urllib.parse
 
 from bs4 import BeautifulSoup as bs # pip install bs4
@@ -106,10 +108,7 @@ def make_docset(source_dir, dst_dir, filename):
     shutil.copy(targz_filepath, docset_filepath)
 
 
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-
-    destination_dir = os.getcwd()
+def main(build_dir, dest_dir, args):
 
     # Docset archive format
     """ 
@@ -123,10 +122,11 @@ if __name__ == '__main__':
                         Documents/
                             *
     """
-    docset_dir = os.path.join(destination_dir, "%s.docset" % docset_name)
+    docset_dir = os.path.join(build_dir, "%s.docset" % docset_name)
     content_dir = os.path.join(docset_dir , "Contents")
     resources_dir = os.path.join(content_dir, "Resources")
     document_dir = os.path.join(resources_dir, "Documents")
+
     os.makedirs(document_dir, exist_ok=True)
     os.makedirs(os.path.join(document_dir, base_url), exist_ok=True)
 
@@ -177,7 +177,51 @@ if __name__ == '__main__':
     # tarball and gunzip the docset
     make_docset(
         docset_dir,
-        destination_dir,
+        dest_dir,
         docset_name
     )
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(
+        description='Dash docset creation script for Powershell modules and Cmdlets'
+    )
+
+    parser.add_argument("-v", "--verbose", 
+        help="increase output verbosity", 
+        action="store_true"
+    )
+
+    parser.add_argument("-t", "--temporary", 
+        help="Use a temporary directory for creating docset, otherwise use current dir.", 
+        default=False, 
+        action="store_true"
+    )
+
+    parser.add_argument("-l", "--local", 
+        help="Do not download content. Only for development use.\n" + 
+             "Incompatible with --temporary option", 
+        default=False, 
+        action="store_true"
+    )
+
+    parser.add_argument("-o", "--output", 
+        help="set output directory", 
+        default = os.getcwd(),
+    )
+
+    args = parser.parse_args()
+    destination_dir = args.output
+
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+
+    if args.temporary:
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            main(tmpdirname, destination_dir, args)
+    else:
+        main(destination_dir, destination_dir, args)
     
