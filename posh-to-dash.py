@@ -317,7 +317,7 @@ def main(build_dir, dest_dir, args):
     os.makedirs(os.path.join(document_dir, base_url), exist_ok=True)
 
     shutil.copy("Info.plist", content_dir)
-    shutil.copy("LICENSE", resources_dir)
+    shutil.copy("DASH_LICENSE", os.path.join(resources_dir, "LICENSE"))
 
 
     if not args.local:
