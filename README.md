@@ -16,7 +16,7 @@
 `posh-to-dash.py` relies on :
 
 * `requests` for http(s) downloads
-* `selenium` and `phantomjs for webscraping
+* `selenium` and `phantomjs` for webscraping
 * `bs4` for html parsing and replacing
 
 Start scraping by typing : `posh-to-dash.py --output $outputdir --version 6 --temporary`
