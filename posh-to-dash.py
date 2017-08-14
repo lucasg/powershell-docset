@@ -209,14 +209,14 @@ def crawl_posh_themes(documents_folder, soup, current_filepath):
     return soup
 
 
-def crawl_posh_documentation(documents_folder, posh_version = posh_version):
+def crawl_posh_documentation(documents_folder, powershell_version = posh_version):
     """ Crawl and download Posh modules documentation """
 
-    index = default_url % posh_version
-    modules_toc = default_toc % (posh_version, posh_version)
+    index = default_url % powershell_version
+    modules_toc = default_toc % (powershell_version, powershell_version)
 
     index_filepath = os.path.join(documents_folder, domain, "en-us", "index.html")
-    download_and_fix_links(index, index_filepath, is_index= True, posh_version = posh_version, documents_folder = documents_folder)        
+    download_and_fix_links(index, index_filepath, is_index= True, posh_version = powershell_version, documents_folder = documents_folder)        
 
     modules_filepath = os.path.join(documents_folder, "modules.toc")
     download_textfile(modules_toc, modules_filepath)
@@ -230,13 +230,14 @@ def crawl_posh_documentation(documents_folder, posh_version = posh_version):
         for module in modules['items'][0]['children']:
 
             module_url = urllib.parse.urljoin(modules_toc, module["href"])
-            module_dir = os.path.join(documents_folder, base_url, module['toc_title'])
+            module_url = "%s/?view=powershell-%s" % (module_url, powershell_version)
 
-            os.makedirs(module_dir, exist_ok = True)
+            module_dir = os.path.join(documents_folder, base_url, module['toc_title'])
             module_filepath = os.path.join(module_dir, "index.html")
+            os.makedirs(module_dir, exist_ok = True)
 
             logging.debug("downloading modules doc %s -> %s" %(module_url, module_filepath))
-            mod_html = download_and_fix_links(module_url, module_filepath, posh_version = posh_version, documents_folder = documents_folder)
+            mod_html = download_and_fix_links(module_url, module_filepath, posh_version = powershell_version, documents_folder = documents_folder)
 
             for cmdlet in module['children']:
                 cmdlet_name = cmdlet['toc_title']
@@ -245,12 +246,15 @@ def crawl_posh_documentation(documents_folder, posh_version = posh_version):
                     continue
                 
                 logging.debug("cmdlet %s" % cmdlet)
+                
                 cmdlet_urlpath = cmdlet["href"]
                 cmdlet_url = urllib.parse.urljoin(modules_toc, cmdlet_urlpath)
+                cmdlet_url = "%s?view=powershell-%s" % (cmdlet_url, powershell_version)
+
                 cmdlet_filepath = os.path.join(module_dir, "%s.html" % cmdlet_name)
 
                 logging.debug("downloading cmdlet doc %s -> %s" %(cmdlet_url, cmdlet_filepath))
-                cmdlet_html = download_and_fix_links(cmdlet_url, cmdlet_filepath, posh_version = posh_version, documents_folder = documents_folder)
+                cmdlet_html = download_and_fix_links(cmdlet_url, cmdlet_filepath, posh_version = powershell_version, documents_folder = documents_folder)
                 
 
 def insert_into_sqlite_db(cursor, name, record_type, path):
@@ -319,7 +323,7 @@ def main(build_dir, dest_dir, args):
         global_driver = webdriver.PhantomJS(executable_path="C:\\Users\\lucas\\AppData\\Roaming\\npm\\node_modules\\phantomjs-prebuilt\\lib\\phantom\\bin\phantomjs.exe")
     
         # Crawl and download powershell modules documentation
-        crawl_posh_documentation(document_dir, posh_version = args.version)
+        crawl_posh_documentation(document_dir, powershell_version = args.version)
 
         # Download icon for package
         download_binary("https://github.com/PowerShell/PowerShell/raw/master/assets/Powershell_16.png", os.path.join(docset_dir, "icon.png"))
