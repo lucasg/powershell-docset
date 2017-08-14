@@ -98,9 +98,9 @@ def download_and_fix_links(url, output_filepath, posh_version = posh_version, is
         # search replace <a href="(\w+-\w+)\?view=powershell-6" data-linktype="relative-path">
         #                <a href="$1.html" data-linktype="relative-path">
         if is_index:
-            link_str_pattern = "([\w\.\/]+)\?view=powershell-%s" % posh_version
+            link_str_pattern = "([\w\.\/]+)\?view=powershell-"
         else:
-            link_str_pattern = "(\w+-\w+)\?view=powershell-%s" % posh_version
+            link_str_pattern = "(\w+-\w+)\?view=powershell-"
 
         link_pattern = re.compile(link_str_pattern)
         targets = link_pattern.findall(link['href'])
@@ -238,6 +238,7 @@ def crawl_posh_documentation(documents_folder, powershell_version = posh_version
 
             logging.debug("downloading modules doc %s -> %s" %(module_url, module_filepath))
             mod_html = download_and_fix_links(module_url, module_filepath, posh_version = powershell_version, documents_folder = documents_folder)
+            
 
             for cmdlet in module['children']:
                 cmdlet_name = cmdlet['toc_title']
@@ -324,6 +325,7 @@ def main(build_dir, dest_dir, args):
     
         # Crawl and download powershell modules documentation
         crawl_posh_documentation(document_dir, powershell_version = args.version)
+        
 
         # Download icon for package
         download_binary("https://github.com/PowerShell/PowerShell/raw/master/assets/Powershell_16.png", os.path.join(docset_dir, "icon.png"))
