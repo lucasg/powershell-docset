@@ -106,16 +106,17 @@ def crawl_posh_documentation(documents_folder, posh_version = posh_version):
 
 
 
-def update_db(db, cur, name, typ, path):
+def insert_into_sqlite_db(cursor, name, record_type, path):
+    """ Insert a new unique record in the sqlite database. """
     try:
-        cur.execute('SELECT rowid FROM searchIndex WHERE path = ?', (path,))
-        dbpath = cur.fetchone()
-        cur.execute('SELECT rowid FROM searchIndex WHERE name = ?', (name,))
-        dbname = cur.fetchone()
+        cursor.execute('SELECT rowid FROM searchIndex WHERE path = ?', (path,))
+        dbpath = cursor.fetchone()
+        cursor.execute('SELECT rowid FROM searchIndex WHERE name = ?', (name,))
+        dbname = cursor.fetchone()
 
         if dbpath is None and dbname is None:
-            cur.execute('INSERT OR IGNORE INTO searchIndex(name, type, path) VALUES (?,?,?)', (name, typ, path))
-            logging.debug('DB add [%s] >> name: %s, path: %s' % (typ, name, path))
+            cursor.execute('INSERT OR IGNORE INTO searchIndex(name, type, path) VALUES (?,?,?)', (name, record_type, path))
+            logging.debug('DB add [%s] >> name: %s, path: %s' % (record_type, name, path))
         else:
             logging.debug('record exists')
 
@@ -124,7 +125,10 @@ def update_db(db, cur, name, typ, path):
 
 
 def make_docset(source_dir, dst_dir, filename):
-    """ https://stackoverflow.com/a/17081026/1741450 """
+    """ 
+    Tar-gz the build directory while conserving the relative folder tree paths. 
+    Copied from : https://stackoverflow.com/a/17081026/1741450 
+    """
     
     tar_filepath = os.path.join(dst_dir, '%s.tar' % filename)
     targz_filepath = os.path.join(dst_dir, '%s.tar.gz' % filename)
@@ -134,7 +138,7 @@ def make_docset(source_dir, dst_dir, filename):
         tar.add(source_dir, arcname=os.path.basename(source_dir))
 
     shutil.move(tar_filepath, targz_filepath)
-    shutil.copy(targz_filepath, docset_filepath)
+    # shutil.copy(targz_filepath, docset_filepath) # can conflict with build dir name
 
 
 def main(build_dir, dest_dir, args):
@@ -185,9 +189,7 @@ def main(build_dir, dest_dir, args):
     for module in modules:
 
         module_name = os.path.basename(module)
-        # search replace <a href="(\w+-\w+)\?view=powershell-6" data-linktype="relative-path"> by <a href="$1.html" data-linktype="relative-path">
-
-        update_db(db, cur, module_name, "Module", "%s/%s/index.html" % (base_url, module_name))
+        insert_into_sqlite_db(cur, module_name, "Module", "%s/%s/index.html" % (base_url, module_name))
 
         for f in filter(lambda x : os.path.isfile(os.path.join(module_dir, module_name, x)), os.listdir(module)):
             
@@ -196,7 +198,7 @@ def main(build_dir, dest_dir, args):
                 continue
 
             cmdlet_name, html_ext = os.path.splitext(cmdlet_filename)
-            update_db(db, cur, cmdlet_name, "Cmdlet", "%s/%s/%s" % (base_url, module_name, cmdlet_filename))
+            insert_into_sqlite_db(cur, cmdlet_name, "Cmdlet", "%s/%s/%s" % (base_url, module_name, cmdlet_filename))
         
 
     # commit and close db
