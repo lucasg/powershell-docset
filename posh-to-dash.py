@@ -143,7 +143,9 @@ if __name__ == '__main__':
 
     # Create database and index html doc
     sqlite_filepath = os.path.join(resources_dir, "docSet.dsidx")
-    os.remove(sqlite_filepath)
+    if os.path.exists(sqlite_filepath):
+        os.remove(sqlite_filepath)
+
     db = sqlite3.connect(sqlite_filepath)
     cur = db.cursor()
     cur.execute('CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);')
