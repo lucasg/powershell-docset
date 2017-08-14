@@ -138,7 +138,8 @@ if __name__ == '__main__':
     crawl_posh_documentation(document_dir)
 
     # Download icon for package
-    # download_binary("https://github.com/PowerShell/PowerShell/raw/master/assets/Powershell_16.png", os.path.join(docset_dir, "icon.png"))
+    download_binary("https://github.com/PowerShell/PowerShell/raw/master/assets/Powershell_16.png", os.path.join(docset_dir, "icon.png"))
+    download_binary("https://github.com/PowerShell/PowerShell/raw/master/assets/Powershell_32.png", os.path.join(docset_dir, "icon@2x.png"))
 
     # Create database and index html doc
     sqlite_filepath = os.path.join(resources_dir, "docSet.dsidx")
