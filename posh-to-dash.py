@@ -10,9 +10,14 @@ import tarfile
 import tempfile
 import argparse
 import urllib.parse
+import urllib
+import time
 
-from bs4 import BeautifulSoup as bs, Tag # pip install bs4
 import requests
+from bs4 import BeautifulSoup as bs, Tag # pip install bs4
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys  
+from selenium.webdriver.chrome.options import Options
 
 
 # CONFIGURATION
@@ -24,6 +29,8 @@ base_url = "docs.microsoft.com/en-us/powershell/module"
 default_url = "https://%s/?view=powershell-%%s" % (base_url)
 # default_toc = "https://docs.microsoft.com/api/apibrowser/powershell/modules?moniker=powershell-%s&api-version=%s"
 default_toc = "https://%s/powershell-%%s/toc.json?view=powershell-%%s" % (base_url)
+
+global_driver = None
 
 def download_binary(url, output_filename):
     """ Download GET request as binary file """
@@ -37,12 +44,44 @@ def download_textfile(url, output_filename):
     r = requests.get(url)
     with open(output_filename, 'w', encoding="utf8") as f:
         f.write(r.text)
+    
 
-def download_and_fix_links(url, output_filepath, posh_version = posh_version):
+def download_as_browser(url, output_filename):
+    global global_driver
+    #driver = webdriver.PhantomJS(executable_path="C:\\Users\\lucas\\AppData\\Roaming\\npm\\node_modules\\phantomjs-prebuilt\\lib\\phantom\\bin\phantomjs.exe")
+    global_driver.get(url)
+
+    #soupFromJokesCC = BeautifulSoup(driver.page_source) #page_source fetches page after rendering is complete
+    with open(output_filename, 'w', encoding="utf8") as f:
+        f.write(global_driver.page_source)
+
+    #global_driver.save_screenshot(output_filename+'screen.png') # save a screenshot to disk
+    
+
+
+def download_and_fix_links(url, output_filepath, posh_version = posh_version, is_index =  False):
     """ Download and fix broken nav paths for modules index """
+    global global_driver
+    # r = requests.get(url)
+    # index_html = r.text
+    #driver = webdriver.PhantomJS(executable_path="C:\\Users\\lucas\\AppData\\Roaming\\npm\\node_modules\\phantomjs-prebuilt\\lib\\phantom\\bin\phantomjs.exe")
+    try:
+        global_driver.get(url)
+        index_html = global_driver.page_source
+    except (ConnectionResetError, urllib.error.URLError) as e:
+        # we may have a triggered a anti-scraping time ban
+        # Lay low for several seconds and get back to it.
 
-    r = requests.get(url)
-    index_html = r.text
+        global_driver.quit()
+        global_driver = webdriver.PhantomJS(executable_path="C:\\Users\\lucas\\AppData\\Roaming\\npm\\node_modules\\phantomjs-prebuilt\\lib\\phantom\\bin\phantomjs.exe")
+        time.sleep(2)
+        index_html = None
+
+    # try a second time, and raise error if fail
+    if not index_html:
+        global_driver.get(url)
+        index_html = global_driver.page_source
+
 
     soup = bs(index_html, 'html.parser')
     for link in soup.findAll("a", { "data-linktype" : "relative-path"}):
@@ -64,6 +103,9 @@ def download_and_fix_links(url, output_filepath, posh_version = posh_version):
 
         fixed_html = soup.prettify("utf-8")
         o_index.write(fixed_html)
+
+    #global_driver.save_screenshot(output_filepath+'screen.png') # save a screenshot to disk
+    return index_html
 
         
 
@@ -142,6 +184,7 @@ def make_docset(source_dir, dst_dir, filename):
 
 
 def main(build_dir, dest_dir, args):
+    global global_driver
 
     # Docset archive format
     """ 
@@ -168,12 +211,16 @@ def main(build_dir, dest_dir, args):
 
 
     if not args.local:
+        global_driver = webdriver.PhantomJS(executable_path="C:\\Users\\lucas\\AppData\\Roaming\\npm\\node_modules\\phantomjs-prebuilt\\lib\\phantom\\bin\phantomjs.exe")
+    
         # Crawl and download powershell modules documentation
         crawl_posh_documentation(document_dir, posh_version = args.version)
 
         # Download icon for package
         download_binary("https://github.com/PowerShell/PowerShell/raw/master/assets/Powershell_16.png", os.path.join(docset_dir, "icon.png"))
         download_binary("https://github.com/PowerShell/PowerShell/raw/master/assets/Powershell_32.png", os.path.join(docset_dir, "icon@2x.png"))
+
+        global_driver.quit()
 
 
     # Create database and index html doc
@@ -219,6 +266,8 @@ def main(build_dir, dest_dir, args):
     )
 
 if __name__ == '__main__':
+
+    
 
     parser = argparse.ArgumentParser(
         description='Dash docset creation script for Powershell modules and Cmdlets'
@@ -267,4 +316,3 @@ if __name__ == '__main__':
             main(tmpdirname, destination_dir, args)
     else:
         main(destination_dir, destination_dir, args)
-    
