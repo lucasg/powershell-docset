@@ -43,6 +43,7 @@ def download_binary(url, output_filename):
 
 def download_textfile(url, output_filename):
     """ Download GET request as utf-8 text file """
+    logging.debug("download_textfile : %s -> %s" % (url, output_filename))
     r = requests.get(url)
     with open(output_filename, 'w', encoding="utf8") as f:
         f.write(r.text)
@@ -86,17 +87,33 @@ def download_and_fix_links(url, output_filepath, posh_version = posh_version, is
 
 
     soup = bs(index_html, 'html.parser')
-    for link in soup.findAll("a", { "data-linktype" : "relative-path"}):
 
+    
+    links = soup.findAll("a", { "data-linktype" : "relative-path"}) # for modules and cmdlet pages
+    if is_index: # for index page
+        content_table = soup.findAll("table", { "class" : "api-search-results standalone"})[0]
+        links = content_table.findAll(lambda tag: tag.name == 'a' and 'ms.title' in tag.attrs)    # for index page   
+                
+    for link in links:
         # search replace <a href="(\w+-\w+)\?view=powershell-6" data-linktype="relative-path">
         #                <a href="$1.html" data-linktype="relative-path">
-        link_str_pattern = "(\w+-\w+)\?view=powershell-%s" % posh_version
+        if is_index:
+            link_str_pattern = "([\w\.\/]+)\?view=powershell-%s" % posh_version
+        else:
+            link_str_pattern = "(\w+-\w+)\?view=powershell-%s" % posh_version
+
         link_pattern = re.compile(link_str_pattern)
         targets = link_pattern.findall(link['href'])
         if not len(targets): # badly formated 'a' link
             continue
 
-        fixed_link = soup.new_tag("a", href="%s.html" % targets[0], **{ "data-linktype" : "relative-path"})
+        if is_index:
+            uri_path = targets[0].lstrip('/').rstrip('/')
+            fixed_link = soup.new_tag("a", href="%s/index.html" % (uri_path), **{ "ms.title" : link["ms.title"]})
+        else:
+            fixed_link = soup.new_tag("a", href="%s.html" % targets[0], **{ "data-linktype" : "relative-path"})
+
+        print(link['href'], " -> ", fixed_link['href']) 
         fixed_link.string = link.string
         link.replaceWith(fixed_link)
 
