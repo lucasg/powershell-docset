@@ -138,7 +138,7 @@ def make_docset(source_dir, dst_dir, filename):
         tar.add(source_dir, arcname=os.path.basename(source_dir))
 
     shutil.move(tar_filepath, targz_filepath)
-    # shutil.copy(targz_filepath, docset_filepath) # can conflict with build dir name
+    shutil.move(targz_filepath, docset_filepath) # can conflict with build dir name
 
 
 def main(build_dir, dest_dir, args):
@@ -205,10 +205,14 @@ def main(build_dir, dest_dir, args):
     db.commit()
     db.close()
 
+    # output directory : $out/versions/$posh_version/Powershell.docset
+    version_output_dir = os.path.join(dest_dir, "versions", "%s" % args.version)
+    os.makedirs(version_output_dir, exist_ok=True)
+
     # tarball and gunzip the docset
     make_docset(
         docset_dir,
-        dest_dir,
+        version_output_dir,
         docset_name
     )
 
@@ -218,9 +222,15 @@ if __name__ == '__main__':
         description='Dash docset creation script for Powershell modules and Cmdlets'
     )
 
-    parser.add_argument("-v", "--verbose", 
+    parser.add_argument("-vv", "--verbose", 
         help="increase output verbosity", 
         action="store_true"
+    )
+
+    parser.add_argument("-v", "--version", 
+        help="select powershell API versions", 
+        default = "6",
+        choices = ["3.0", "4.0", "5.0", "5.1", "6"]
     )
 
     parser.add_argument("-t", "--temporary", 
