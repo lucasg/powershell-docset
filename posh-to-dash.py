@@ -25,8 +25,10 @@ posh_doc_api_version = '0.2' # powershell doc api version, not this docset one.
 posh_version = '6'
 docset_name = 'Powershell'
 
-base_url = "docs.microsoft.com/en-us/powershell/module"
+domain = "docs.microsoft.com"
+base_url = "%s/en-us/powershell/module" % domain
 default_url = "https://%s/?view=powershell-%%s" % (base_url)
+default_theme_uri = "_themes/docs.theme/master/en-us/_themes"
 # default_toc = "https://docs.microsoft.com/api/apibrowser/powershell/modules?moniker=powershell-%s&api-version=%s"
 default_toc = "https://%s/powershell-%%s/toc.json?view=powershell-%%s" % (base_url)
 
@@ -108,6 +110,56 @@ def download_and_fix_links(url, output_filepath, posh_version = posh_version, is
     return index_html
 
         
+def crawl_posh_themes(documents_folder, current_html):
+    
+    theme_output_dir = os.path.join(documents_folder, domain)
+    soup = bs(current_html, 'html.parser')
+
+    # downloading stylesheets
+    for link in soup.findAll("link", { "rel" : "stylesheet"}):
+        uri_path = link['href'].strip()
+
+        if default_theme_uri in link['href']:
+
+            css_url = "https://%s/%s" % (domain, uri_path)
+            css_filepath =  os.path.join(theme_output_dir, uri_path.lstrip('/'))
+
+            os.makedirs(os.path.dirname(css_filepath), exist_ok = True)
+            
+            # do not download twice the same file
+            if not os.path.exists(css_filepath):
+                download_textfile(css_url, css_filepath)
+
+                # fix source map css
+                # $hex_encoded_id.$name.css -> $name.css
+                css_filename = os.path.basename(uri_path)
+                css_dirname  = os.path.dirname(css_filepath)
+
+                r = re.compile("\w+\.([\w\.]+)")
+                sourcemap_css_filename = r.match(css_filename).groups()[0]
+                download_textfile(css_url, os.path.join(css_dirname, sourcemap_css_filename))
+
+    # downloading scripts
+    for script in soup.findAll("script", {"src":True}):
+        uri_path = script['src']
+
+        if  uri_path.lstrip('/').startswith(default_theme_uri):
+
+            script_url = "https://%s/%s" % (domain, uri_path)
+            
+            # path normalization : we can do better
+            script_path = uri_path.lstrip('/')
+            if -1 != script_path.find('?v='):
+                script_path = script_path[0:script_path.find('?v=')]
+
+            script_filepath =  os.path.join(theme_output_dir, script_path)
+            os.makedirs(os.path.dirname(script_filepath), exist_ok = True)
+
+            # do not download twice the same file
+            if not os.path.exists(script_filepath):
+                download_textfile(script_url, script_filepath)
+    
+
 
 
 def crawl_posh_documentation(documents_folder, posh_version = posh_version):
@@ -119,8 +171,14 @@ def crawl_posh_documentation(documents_folder, posh_version = posh_version):
     index_filepath = os.path.join(documents_folder, domain, "en-us", "index.html")
     download_and_fix_links(index, index_filepath, is_index= True)
 
+    with open(index_filepath, 'r') as index_html_page:
+        crawl_posh_themes(documents_folder, index_html_page.read())
+
     modules_filepath = os.path.join(documents_folder, "modules.toc")
     download_textfile(modules_toc, modules_filepath)
+
+    theme_output_dir = os.path.join(documents_folder, domain, default_theme_uri)
+    os.makedirs(theme_output_dir, exist_ok = True)
 
     with open(modules_filepath, 'r') as modules_fd:
         modules = json.load(modules_fd)
@@ -132,7 +190,10 @@ def crawl_posh_documentation(documents_folder, posh_version = posh_version):
 
             os.makedirs(module_dir, exist_ok = True)
             module_filepath = os.path.join(module_dir, "index.html")
-            download_and_fix_links(module_url, module_filepath)
+
+            logging.debug("downloading modules doc %s -> %s" %(module_url, module_filepath))
+            mod_html = download_and_fix_links(module_url, module_filepath)
+            crawl_posh_themes(documents_folder, mod_html)
             
             for cmdlet in module['children']:
                 cmdlet_name = cmdlet['toc_title']
@@ -142,11 +203,11 @@ def crawl_posh_documentation(documents_folder, posh_version = posh_version):
 
                 cmdlet_urlpath = cmdlet["href"]
                 cmdlet_url = urllib.parse.urljoin(modules_toc, cmdlet_urlpath)
-
                 cmdlet_filepath = os.path.join(module_dir, "%s.html" % cmdlet_name)
-                download_and_fix_links(cmdlet_url, cmdlet_filepath, posh_version = posh_version)            
 
-
+                logging.debug("downloading cmdlet doc %s -> %s" %(cmdlet_url, cmdlet_filepath))
+                cmdlet_html = download_and_fix_links(cmdlet_url, cmdlet_filepath, posh_version = posh_version)            
+                crawl_posh_themes(documents_folder, cmdlet_html)
 
 def insert_into_sqlite_db(cursor, name, record_type, path):
     """ Insert a new unique record in the sqlite database. """
