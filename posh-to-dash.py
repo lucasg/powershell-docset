@@ -2,6 +2,7 @@
 
 import sqlite3, os, urllib, subprocess, hashlib
 import os
+import re
 import shutil
 import logging
 import json
@@ -10,7 +11,7 @@ import tempfile
 import argparse
 import urllib.parse
 
-from bs4 import BeautifulSoup as bs # pip install bs4
+from bs4 import BeautifulSoup as bs, Tag # pip install bs4
 import requests
 
 
@@ -25,19 +26,50 @@ default_url = "https://%s/?view=powershell-%%s" % (base_url)
 default_toc = "https://%s/powershell-%%s/toc.json?view=powershell-%%s" % (base_url)
 
 def download_binary(url, output_filename):
-
+    """ Download GET request as binary file """
     r = requests.get(url, stream=True)
     with open(output_filename, 'wb') as f:
         for data in r.iter_content(32*1024):
             f.write(data)
 
 def download_textfile(url, output_filename):
-
+    """ Download GET request as utf-8 text file """
     r = requests.get(url)
     with open(output_filename, 'w', encoding="utf8") as f:
         f.write(r.text)
 
+def download_and_fix_module_index(module_url, module_dir):
+    """ Download and fix broken nav paths for modules index """
+
+    r = requests.get(module_url)
+    index_html = r.text
+
+    soup = bs(index_html, 'html.parser')
+    for link in soup.findAll("a", { "data-linktype" : "relative-path"}):
+
+        # search replace <a href="(\w+-\w+)\?view=powershell-6" data-linktype="relative-path">
+        #                <a href="$1.html" data-linktype="relative-path">
+        link_pattern = re.compile(r"(\w+-\w+)\?view=powershell-6")
+        targets = link_pattern.findall(link['href'])
+        if not len(targets): # badly formated 'a' link
+            continue
+
+        fixed_link = soup.new_tag("a", href="%s.html" % targets[0], **{ "data-linktype" : "relative-path"})
+        fixed_link.string = link.string
+        link.replaceWith(fixed_link)
+
+    # Export fixed html
+    module_filepath = os.path.join(module_dir, "index.html")
+    with open(module_filepath, 'wb') as o_index:
+
+        fixed_html = soup.prettify("utf-8")
+        o_index.write(fixed_html)
+
+        
+
+
 def crawl_posh_documentation(documents_folder, posh_version = posh_version):
+    """ Crawl and download Posh modules documentation """
 
     index = default_url % posh_version
     modules_toc = default_toc % (posh_version, posh_version)
@@ -52,16 +84,13 @@ def crawl_posh_documentation(documents_folder, posh_version = posh_version):
         modules = json.load(modules_fd)
 
         for module in modules['items'][0]['children']:
+
             module_url = urllib.parse.urljoin(modules_toc, module["href"])
-
             module_dir = os.path.join(documents_folder, base_url, module['toc_title'])
+
             os.makedirs(module_dir, exist_ok = True)
-
-            r = requests.get(module_url)
-            module_filepath = os.path.join(module_dir, "index.html")
-            download_textfile(module_url, module_filepath)
+            download_and_fix_module_index(module_url, module_dir)
             
-
             for cmdlet in module['children']:
                 cmdlet_name = cmdlet['toc_title']
                 
