@@ -100,6 +100,23 @@ def download_and_fix_links(url, output_filepath, posh_version = posh_version, is
         fixed_link.string = link.string
         link.replaceWith(fixed_link)
 
+    # remove unsupported nav elements
+    nav_elements = [
+        ["nav", { "class" : "doc-outline", "role" : "navigation"}],
+        ["ul", { "class" : "breadcrumbs", "role" : "navigation"}],
+        ["div", { "class" : "sidebar", "role" : "navigation"}],
+        ["div", { "class" : "dropdown dropdown-full mobilenavi"}],
+        ["p", { "class" : "api-browser-description"}],
+        ["div", { "class" : "api-browser-search-field-container"}],
+    ]
+
+    for nav in nav_elements:
+        nav_class, nav_attr = nav
+        
+        for nav_tag in soup.findAll(nav_class, nav_attr):
+            _ = nav_tag.extract()
+
+
     # Export fixed html
     with open(output_filepath, 'wb') as o_index:
 
