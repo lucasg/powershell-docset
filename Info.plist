@@ -12,7 +12,7 @@
 	<string>https://docs.microsoft.com/en-US/powershell/module/</string>
 
 	<key>dashIndexFilePath</key>
-	<string>docs.microsoft.com/en-US/powershell/module/index.html</string>
+	<string>docs.microsoft.com/en-US/index.html</string>
 
 	<key>DashDocSetFamily</key>
 	<string>posh</string>

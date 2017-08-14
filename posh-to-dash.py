@@ -74,8 +74,8 @@ def crawl_posh_documentation(documents_folder, posh_version = posh_version):
     index = default_url % posh_version
     modules_toc = default_toc % (posh_version, posh_version)
 
-    index_filepath = os.path.join(documents_folder, "%s/index.html" % base_url)
-    download_textfile(index, index_filepath)
+    index_filepath = os.path.join(documents_folder, domain, "en-us", "index.html")
+    download_and_fix_links(index, index_filepath, is_index= True)
 
     modules_filepath = os.path.join(documents_folder, "modules.toc")
     download_textfile(modules_toc, modules_filepath)
