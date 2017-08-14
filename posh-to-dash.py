@@ -17,9 +17,10 @@ posh_doc_api_version = '0.2' # powershell doc api version, not this docset one.
 posh_version = '6'
 docset_name = 'Powershell'
 
-default_url = "https://docs.microsoft.com/en-us/powershell/module/?view=powershell-%s"
+base_url = "docs.microsoft.com/en-us/powershell/module"
+default_url = "https://%s/?view=powershell-%%s" % (base_url)
 # default_toc = "https://docs.microsoft.com/api/apibrowser/powershell/modules?moniker=powershell-%s&api-version=%s"
-default_toc = "https://docs.microsoft.com/en-us/powershell/module/powershell-%s/toc.json?view=powershell-%s"
+default_toc = "https://%s/powershell-%%s/toc.json?view=powershell-%%s" % (base_url)
 
 def download_binary(url, output_filename):
 
@@ -39,20 +40,19 @@ def crawl_posh_documentation(documents_folder, posh_version = posh_version):
     index = default_url % posh_version
     modules_toc = default_toc % (posh_version, posh_version)
 
-    index_filepath = os.path.join(documents_folder, "index.html")
+    index_filepath = os.path.join(documents_folder, "%s/index.html" % base_url)
     download_textfile(index, index_filepath)
 
     modules_filepath = os.path.join(documents_folder, "modules.toc")
     download_textfile(modules_toc, modules_filepath)
 
-    modules_filepath = os.path.join(documents_folder, "modules.toc")
     with open(modules_filepath, 'r') as modules_fd:
         modules = json.load(modules_fd)
 
         for module in modules['items'][0]['children']:
             module_url = urllib.parse.urljoin(modules_toc, module["href"])
 
-            module_dir = os.path.join(documents_folder, module['toc_title'])
+            module_dir = os.path.join(documents_folder, base_url, module['toc_title'])
             os.makedirs(module_dir, exist_ok = True)
 
             r = requests.get(module_url)
@@ -128,13 +128,14 @@ if __name__ == '__main__':
     resources_dir = os.path.join(content_dir, "Resources")
     document_dir = os.path.join(resources_dir, "Documents")
     os.makedirs(document_dir, exist_ok=True)
+    os.makedirs(os.path.join(document_dir, base_url), exist_ok=True)
 
     shutil.copy("Info.plist", content_dir)
     shutil.copy("LICENSE", resources_dir)
 
 
     # Crawl and download powershell modules documentation
-    # crawl_posh_documentation(document_dir)
+    crawl_posh_documentation(document_dir)
 
     # Download icon for package
     # download_binary("https://github.com/PowerShell/PowerShell/raw/master/assets/Powershell_16.png", os.path.join(docset_dir, "icon.png"))
@@ -147,14 +148,14 @@ if __name__ == '__main__':
     cur.execute('CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);')
     cur.execute('CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);')
 
-    module_dir = os.path.join(document_dir, "docs.microsoft.com/en-US/powershell/module/")
+    module_dir = os.path.join(document_dir, base_url)
     modules = filter(lambda x : os.path.isdir(x), map(lambda y: os.path.join(module_dir, y), os.listdir(module_dir)))
     for module in modules:
 
         module_name = os.path.basename(module)
         # search replace <a href="(\w+-\w+)\?view=powershell-6" data-linktype="relative-path"> by <a href="$1.html" data-linktype="relative-path">
 
-        update_db(db, cur, module_name, "Module", "docs.microsoft.com/en-US/powershell/module/%s/index.html" % module_name)
+        update_db(db, cur, module_name, "Module", "%s/%s/index.html" % (base_url, module_name))
 
         for f in filter(lambda x : os.path.isfile(os.path.join(module_dir, module_name, x)), os.listdir(module)):
             
@@ -163,10 +164,10 @@ if __name__ == '__main__':
                 continue
 
             cmdlet_name, html_ext = os.path.splitext(cmdlet_filename)
-            update_db(db, cur, cmdlet_name, "Cmdlet", "docs.microsoft.com/en-US/powershell/module/%s/%s" % (module_name, cmdlet_filename))
+            update_db(db, cur, cmdlet_name, "Cmdlet", "%s/%s/%s" % (base_url, module_name, cmdlet_filename))
         
 
-    # # commit and close db
+    # commit and close db
     db.commit()
     db.close()
 
