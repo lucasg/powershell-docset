@@ -365,8 +365,113 @@ def make_docset(source_dir, dst_dir, filename):
     shutil.move(targz_filepath, docset_filepath) # can conflict with build dir name
 
 
-def main(build_dir, dest_dir, args):
-    global global_driver
+def download_page_contents(configuration, uri, output_filepath):
+    """ Download a page using it's uri from the TOC """
+
+    # Resolving "absolute" url et use appropriate version
+    full_url = urllib.parse.urljoin(configuration.docs_toc_url, uri)
+    versionned_url = "{0:s}?{1:s}".format(full_url, configuration.powershell_version_param) 
+
+    download_textfile(versionned_url, output_filepath)
+    
+
+def download_module_contents(configuration, module_name, module_uri, module_dir,  cmdlets):
+    """ Download a modules contents """
+    
+    module_filepath = os.path.join(module_dir, "%s.html" % module_name)
+
+    logging.debug("downloading %s module index page  -> %s" % (module_name, module_filepath))
+    download_page_contents(configuration, module_uri, module_filepath)
+
+    # Downloading cmdlet contents
+    for cmdlet in cmdlets:
+
+        cmdlet_name = cmdlet['toc_title']
+        if cmdlet_name.lower() in ("about", "functions", "providers", "provider"): # skip special toc
+            continue
+
+        cmdlet_uri = cmdlet["href"]
+        cmdlet_filepath = os.path.join(module_dir, "%s.html" % cmdlet_name)
+
+        logging.debug("downloading %s cmdlet doc -> %s" % (cmdlet_name, cmdlet_filepath))
+        download_page_contents(configuration, cmdlet_uri, cmdlet_filepath)
+
+def crawl_posh_contents(configuration : Configuration, download_dir : str):
+    """ Download Powershell modules and cmdlets content pages based on TOC """
+
+    # Download toc
+    logging.debug("Downloading powershell toc : %s" % (configuration.docs_toc_url))
+    r = requests.get(configuration.docs_toc_url)
+    modules_toc = json.loads(r.text)
+
+    # Downloading modules contents
+    for module in modules_toc['items'][0]['children']:
+
+        module_name = module['toc_title']
+        module_uri = module["href"]
+        module_cmdlets = module['children']
+        module_dir = os.path.join(download_dir, Configuration.base_url, module_name)
+
+        download_module_contents(configuration, module_name, module_uri, module_dir,  module_cmdlets)
+
+
+def rewrite_html_contents(configuration : Configuration, html_dir : str):
+
+    
+
+def copy_folder(src_folder, dst_folder):
+
+    def onerror(func, path, exc_info):
+        """
+        Error handler for ``shutil.rmtree``.
+
+        If the error is due to an access error (read only file)
+        it attempts to add write permission and then retries.
+
+        If the error is for another reason it re-raises the error.
+
+        Usage : ``shutil.rmtree(path, onerror=onerror)``
+        """
+        import stat
+
+        if not os.path.exists(path):
+            return
+
+        if not os.access(path, os.W_OK):
+            # Is the error an access error ?
+            os.chmod(path, stat.S_IWUSR)
+            func(path)
+        else:
+            raise
+
+    shutil.rmtree(dst_folder,ignore_errors=False,onerror=onerror) 
+    shutil.copytree(src_folder, dst_folder)
+
+def main(configuration : Configuration):
+
+
+    download_dir = os.path.join(configuration.build_folder, "_1_downloaded_contents")
+    html_rewrite_dir = os.path.join(configuration.build_folder, "_2_html_rewrite")
+    additional_resources_dir = os.path.join(configuration.build_folder, "_3_additional_resources")
+    package_dir = os.path.join(configuration.build_folder, "_4_ready_to_be_packaged")
+
+    # Prepare folders
+
+    # Download html pages
+    # crawl_posh_contents(configuration, download_dir)
+
+    # Parse and rewrite html contents
+    copy_folder(download_dir, html_rewrite_dir)
+    rewrite_html_contents(configuration, html_rewrite_dir)
+
+    # Download additionnal resources
+
+    # Database indexing
+
+    # Archive packaging
+
+
+def old_main(configuration : Configuration):
 
     # Docset archive format
     """ 
