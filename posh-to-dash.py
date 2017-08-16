@@ -105,6 +105,11 @@ class Configuration:
 
 def download_binary(url, output_filename):
     """ Download GET request as binary file """
+    logging.debug("download_binary : %s -> %s" % (url, output_filename))
+
+    # ensure the folder path actually exist
+    os.makedirs(os.path.dirname(output_filename), exist_ok = True)
+
     r = requests.get(url, stream=True)
     with open(output_filename, 'wb') as f:
         for data in r.iter_content(32*1024):
