@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import sqlite3, os, urllib, subprocess, hashlib
+import sqlite3
 import os
+import glob
 import re
 import shutil
 import logging
@@ -12,6 +13,7 @@ import argparse
 import urllib.parse
 import urllib
 import time
+import collections
 
 import requests
 from bs4 import BeautifulSoup as bs, Tag # pip install bs4
@@ -375,13 +377,15 @@ def download_page_contents(configuration, uri, output_filepath):
     download_textfile(versionned_url, output_filepath)
     
 
-def download_module_contents(configuration, module_name, module_uri, module_dir,  cmdlets):
+def download_module_contents(configuration, module_name, module_uri, module_dir, cmdlets, root_dir):
     """ Download a modules contents """
     
     module_filepath = os.path.join(module_dir, "%s.html" % module_name)
 
     logging.debug("downloading %s module index page  -> %s" % (module_name, module_filepath))
     download_page_contents(configuration, module_uri, module_filepath)
+
+    cmdlets_infos = []
 
     # Downloading cmdlet contents
     for cmdlet in cmdlets:
@@ -396,6 +400,19 @@ def download_module_contents(configuration, module_name, module_uri, module_dir,
         logging.debug("downloading %s cmdlet doc -> %s" % (cmdlet_name, cmdlet_filepath))
         download_page_contents(configuration, cmdlet_uri, cmdlet_filepath)
 
+        cmdlets_infos.append({
+            'name' : cmdlet_name,
+            'path' : os.path.relpath(cmdlet_filepath, root_dir),
+        })
+
+    module_infos = {
+        'name' : module_name,
+        'index' : os.path.relpath(module_filepath, root_dir),
+        'cmdlets' : cmdlets_infos
+    }
+
+    return module_infos
+
 def crawl_posh_contents(configuration : Configuration, download_dir : str):
     """ Download Powershell modules and cmdlets content pages based on TOC """
 
@@ -403,6 +420,9 @@ def crawl_posh_contents(configuration : Configuration, download_dir : str):
     logging.debug("Downloading powershell toc : %s" % (configuration.docs_toc_url))
     r = requests.get(configuration.docs_toc_url)
     modules_toc = json.loads(r.text)
+
+    # modules_toc is a web based TOC, where as content_toc is file based
+    content_toc = {}
 
     # Downloading modules contents
     for module in modules_toc['items'][0]['children']:
@@ -412,8 +432,10 @@ def crawl_posh_contents(configuration : Configuration, download_dir : str):
         module_cmdlets = module['children']
         module_dir = os.path.join(download_dir, Configuration.base_url, module_name)
 
-        download_module_contents(configuration, module_name, module_uri, module_dir,  module_cmdlets)
+        module_infos = download_module_contents(configuration, module_name, module_uri, module_dir,  module_cmdlets, download_dir)
+        content_toc[module_name] = module_infos
 
+    return content_toc
 
 def rewrite_html_contents(configuration : Configuration, html_dir : str):
 
@@ -449,16 +471,40 @@ def copy_folder(src_folder, dst_folder):
 
 def main(configuration : Configuration):
 
+    # """ Scheme for content toc : 
+    # {
+    #     module_name : {
+    #         'name' : str,
+    #         'index' : relative path,
+    #         'cmdlets' : [
+    #             {
+    #                 'name' : str,
+    #                 'path' : relative path, 
+    #             },
+    #             ...
+    #         ]
+    #     },
+    #     ...
+    # }
+    # """
+    content_toc = {}
+    resources_to_dl = set()
 
+    """ 0. Prepare folders """
     download_dir = os.path.join(configuration.build_folder, "_1_downloaded_contents")
     html_rewrite_dir = os.path.join(configuration.build_folder, "_2_html_rewrite")
     additional_resources_dir = os.path.join(configuration.build_folder, "_3_additional_resources")
     package_dir = os.path.join(configuration.build_folder, "_4_ready_to_be_packaged")
 
-    # Prepare folders
+    # _4_ready_to_be_packaged is the final build dir
+    docset_dir = os.path.join(package_dir, "%s.docset" % Configuration.docset_name)
+    content_dir = os.path.join(docset_dir , "Contents")
+    resources_dir = os.path.join(content_dir, "Resources")
+    document_dir = os.path.join(resources_dir, "Documents")
 
-    # Download html pages
-    # crawl_posh_contents(configuration, download_dir)
+    """ 1. Download html pages """
+    content_toc = crawl_posh_contents(configuration, download_dir)
+
 
     # Parse and rewrite html contents
     copy_folder(download_dir, html_rewrite_dir)
