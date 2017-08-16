@@ -20,19 +20,86 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 
 
-# CONFIGURATION
-posh_doc_api_version = '0.2' # powershell doc api version, not this docset one.
-posh_version = '6'
-docset_name = 'Powershell'
+class PoshWebDriver:
+    """ Thin wrapper for selenium webdriver for page content retrieval """
 
-domain = "docs.microsoft.com"
-base_url = "%s/en-us/powershell/module" % domain
-default_url = "https://%s/?view=powershell-%%s" % (base_url)
-default_theme_uri = "_themes/docs.theme/master/en-us/_themes"
-# default_toc = "https://docs.microsoft.com/api/apibrowser/powershell/modules?moniker=powershell-%s&api-version=%s"
-default_toc = "https://%s/powershell-%%s/toc.json?view=powershell-%%s" % (base_url)
+    def __init__(self, executable_path = None):
 
-global_driver = None
+        self.driver_exe_path = executable_path
+        self.driver = webdriver.PhantomJS(executable_path = self.driver_exe_path)
+
+    def get_url_page(self, url):
+        """ retrieve the full html content of a page after Javascript execution """
+        
+        index_html = None
+        try:
+            self.driver.get(url)
+            index_html = self.driver.page_source
+        except (ConnectionResetError, urllib.error.URLError) as e:
+            # we may have a triggered a anti-scraping time ban
+            # Lay low for several seconds and get back to it.
+
+            self.driver.quit()
+            self.driver = webdriver.PhantomJS(executable_path = self.driver_exe_path)
+            time.sleep(2)
+            index_html = None
+
+        # try a second time, and raise error if fail
+        if not index_html:
+            self.driver.get(url)
+            index_html = self.driver.page_source
+
+        return index_html
+
+    def quit():
+        return self.driver.quit()
+
+
+class Configuration:
+
+    # STATIC CONSTANTS
+    posh_doc_api_version = '0.2' # powershell doc api version, not this docset one.
+    posh_version = '6'
+    docset_name = 'Powershell'
+
+    domain = "docs.microsoft.com"
+    base_url = "%s/en-us/powershell/module" % domain
+    default_url = "https://%s/?view=powershell-%%s" % (base_url)
+    default_theme_uri = "_themes/docs.theme/master/en-us/_themes"
+    # default_toc = "https://docs.microsoft.com/api/apibrowser/powershell/modules?moniker=powershell-%s&api-version=%s"
+    default_toc = "https://%s/powershell-%%s/toc.json" % (base_url)
+
+    path_to_phantomjs = "C:\\Users\\lucas\\AppData\\Roaming\\npm\\node_modules\\phantomjs-prebuilt\\lib\\phantom\\bin\phantomjs.exe"
+
+    def __init__(self, args):
+
+        
+        # selected powershell api version
+        self.powershell_version = args.version
+
+        # The modules and cmdlets pages are "versionned" using additional params in the GET request
+        self.powershell_version_param = "view=powershell-{0:s}".format(self.powershell_version)
+
+        # build folder (must be cleaned afterwards)
+        self.build_folder = os.path.join(args.output, "_build")
+
+        # output folder
+        self.output_folder = args.output
+
+        # powershell docs start page
+        self.docs_index_url = Configuration.default_url % self.powershell_version
+
+        # powershell docs table of contents url
+        self.docs_toc_url =  "https://{0:s}/powershell-{1:s}/toc.json?{2:s}".format(
+            Configuration.base_url, 
+            self.powershell_version,
+            self.powershell_version_param
+        )
+
+        # selenium webdriver
+        self.webdriver = PoshWebDriver(Configuration.path_to_phantomjs)
+
+
 
 def download_binary(url, output_filename):
     """ Download GET request as binary file """
@@ -41,10 +108,15 @@ def download_binary(url, output_filename):
         for data in r.iter_content(32*1024):
             f.write(data)
 
-def download_textfile(url, output_filename):
+def download_textfile(url : str ,  output_filename : str, params : dict = None):
     """ Download GET request as utf-8 text file """
+
     logging.debug("download_textfile : %s -> %s" % (url, output_filename))
-    r = requests.get(url)
+
+    # ensure the folder path actually exist
+    os.makedirs(os.path.dirname(output_filename), exist_ok = True)
+    
+    r = requests.get(url, data = params)
     with open(output_filename, 'w', encoding="utf8") as f:
         f.write(r.text)
     
@@ -62,7 +134,7 @@ def download_as_browser(url, output_filename):
     
 
 
-def download_and_fix_links(url, output_filepath, posh_version = posh_version, is_index =  False, documents_folder = None):
+def download_and_fix_links(url, output_filepath, posh_version = Configuration.posh_version, is_index =  False, documents_folder = None):
     """ Download and fix broken nav paths for modules index """
     global global_driver
     # r = requests.get(url)
@@ -209,7 +281,7 @@ def crawl_posh_themes(documents_folder, soup, current_filepath):
     return soup
 
 
-def crawl_posh_documentation(documents_folder, powershell_version = posh_version):
+def crawl_posh_documentation(documents_folder, powershell_version = Configuration.posh_version):
     """ Crawl and download Posh modules documentation """
 
     index = default_url % powershell_version
@@ -414,16 +486,17 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
-    destination_dir = args.output
-
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
 
+    conf = Configuration( args )
 
     if args.temporary:
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            main(tmpdirname, destination_dir, args)
+
+        with tempfile.TemporaryDirectory() as tmp_builddir:
+            conf.build_folder = tmp_builddir
+            main(conf)
     else:
-        main(destination_dir, destination_dir, args)
+        main(conf)
