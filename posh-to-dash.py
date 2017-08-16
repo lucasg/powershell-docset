@@ -442,11 +442,268 @@ def crawl_posh_contents(configuration : Configuration, download_dir : str):
 
     return content_toc
 
-def rewrite_html_contents(configuration : Configuration, html_dir : str):
+def rewrite_soup(configuration : Configuration, soup, html_path : str, documents_dir : str):
+    """ rewrite html contents by fixing links and remove unnecessary cruft """
+
+    # Fix navigations links
+    links = soup.findAll("a", { "data-linktype" : "relative-path"}) # for modules and cmdlet pages
+    link_pattern = re.compile(r"(\w+-\w+)\?view=powershell-")
+
+    for link in links:
+
+        href = link['href']
+        fixed_href = href
+
+        # go back to module
+        if href == "./?view=powershell-%s" % configuration.powershell_version:
+            fixed_href = "./%s.html" % link.text
+
+        # go to a cmdlet page
+        else:
+            targets = link_pattern.findall(href)
+            if not len(targets): # badly formated 'a' link
+                continue
+
+            module_name = targets[0]
+            fixed_href = "%s.html" % module_name
+        
+        if fixed_href != href:
+            logging.debug("link rewrite : %s -> %s " % ( href, fixed_href))
+            link['href'] = fixed_href
+
+    # remove unsupported nav elements
+    nav_elements = [
+        ["nav"  , { "class" : "doc-outline", "role" : "navigation"}],
+        ["ul"   , { "class" : "breadcrumbs", "role" : "navigation"}],
+        ["div"  , { "class" : "sidebar", "role" : "navigation"}],
+        ["div"  , { "class" : "dropdown dropdown-full mobilenavi"}],
+        ["p"    , { "class" : "api-browser-description"}],
+        ["div"  , { "class" : "api-browser-search-field-container"}],
+        ["div"  , { "class" : "pageActions"}],
+        ["div"  , { "class" : "container footerContainer"}],
+        ["div"  , { "class" : "dropdown-container"}],
+    ]
+
+    for nav in nav_elements:
+        nav_class, nav_attr = nav
+        
+        for nav_tag in soup.findAll(nav_class, nav_attr):
+            _ = nav_tag.extract()
+
+    # remove script elems
+    for head_script in soup.head.findAll("script"):
+            _ = head_script.extract()
+    
+    # Extract and rewrite additionnal stylesheets to download
+    ThemeResourceRecord = collections.namedtuple('ThemeResourceRecord', 'url, path')
+
+    theme_output_dir = os.path.join(documents_dir, Configuration.domain)
+    theme_resources = []
+
+    for link in soup.head.findAll("link", { "rel" : "stylesheet"}):
+        uri_path = link['href'].strip()
+
+        if not uri_path.lstrip('/').startswith(Configuration.default_theme_uri):
+            continue
+
+        # Construct (url, path) tuple
+        css_url = "https://%s/%s" % (Configuration.domain, uri_path)
+        css_filepath =  os.path.join(theme_output_dir, uri_path.lstrip('/'))
+
+        # Converting href to a relative link
+        path = os.path.relpath(css_filepath, os.path.dirname(html_path))
+        rel_uri = '/'.join(path.split(os.sep))
+        link['href'] = rel_uri
+
+        theme_resources.append( ThemeResourceRecord( 
+            url = css_url, 
+            path = os.path.relpath(css_filepath, documents_dir), # stored as relative path
+        ))
+
+    return soup, set(theme_resources)
+
+def rewrite_index_soup(configuration : Configuration, soup, index_html_path : str, documents_dir : str):
+    """ rewrite html contents by fixing links and remove unnecessary cruft """
+
+    # Fix navigations links
+    content_table = soup.findAll("table", { "class" : "api-search-results standalone"})[0]
+    links = content_table.findAll(lambda tag: tag.name == 'a' and 'ms.title' in tag.attrs)
+    link_pattern = re.compile(r"([\w\.\/]+)\?view=powershell-")
+
+    for link in links:
+
+        href = link['href']
+        fixed_href = href
+
+
+        targets = link_pattern.findall(href)
+        if not len(targets): # badly formated 'a' link
+            continue
+
+        url_path = targets[0].lstrip('/').rstrip('/')
+        module_name = link.attrs['ms.title']
+
+        fixed_href = "%s/%s.html" % (url_path, module_name)
+        
+        if fixed_href != href:
+            logging.debug("link rewrite : %s -> %s " % ( href, fixed_href))
+            link['href'] = fixed_href
+
+    # Fix link to module.svg
+    module_svg_path = os.path.join(documents_dir, Configuration.domain, "en-us", "media", "toolbars", "module.svg")
+    images = content_table.findAll("img" , {'alt' : "Module"})
+    for image in images:
+        image['src'] =  os.path.relpath(module_svg_path, os.path.dirname(index_html_path))
+
+    # remove unsupported nav elements
+    nav_elements = [
+        ["nav"  , { "class" : "doc-outline", "role" : "navigation"}],
+        ["ul"   , { "class" : "breadcrumbs", "role" : "navigation"}],
+        ["div"  , { "class" : "sidebar", "role" : "navigation"}],
+        ["div"  , { "class" : "dropdown dropdown-full mobilenavi"}],
+        ["p"    , { "class" : "api-browser-description"}],
+        ["div"  , { "class" : "api-browser-search-field-container"}],
+        ["div"  , { "class" : "pageActions"}],
+        ["div"  , { "class" : "dropdown-container"}],
+        ["div"  , { "class" : "container footerContainer"}],
+        ["div"  , { "data-bi-name" : "header", "id" : "headerAreaHolder"}],
+    ]
+
+    for nav in nav_elements:
+        nav_class, nav_attr = nav
+        
+        for nav_tag in soup.findAll(nav_class, nav_attr):
+            _ = nav_tag.extract()
+
+    # remove script elems
+    for head_script in soup.head.findAll("script"):
+            _ = head_script.extract()
+
+    # Fixing and downloading css stylesheets
+    theme_output_dir = os.path.join(documents_dir, Configuration.domain)
+    for link in soup.head.findAll("link", { "rel" : "stylesheet"}):
+        uri_path = link['href'].strip()
+
+        if not uri_path.lstrip('/').startswith(Configuration.default_theme_uri):
+            continue
+
+        # Construct (url, path) tuple
+        css_url = "https://%s/%s" % (Configuration.domain, uri_path)
+        css_filepath =  os.path.join(theme_output_dir, uri_path.lstrip('/'))
+
+        # Converting href to a relative link
+        path = os.path.relpath(css_filepath, os.path.dirname(index_html_path))
+        rel_uri = '/'.join(path.split(os.sep))
+        link['href'] = rel_uri
+
+        download_textfile(css_url, css_filepath)
+
+    return soup
+
+
+def rewrite_html_contents(configuration : Configuration, html_root_dir : str):
+    """ rewrite every html file downloaded """
+
+    additional_resources = set()
+
+    for html_file in glob.glob("%s/**/*.html" % html_root_dir, recursive = True):
+
+        logging.debug("rewrite  html_file : %s" % (html_file))
+
+        # Read content and parse html
+        with open(html_file, 'r', encoding='utf8') as i_fd:
+            html_content = i_fd.read()
+
+        soup = bs(html_content, 'html.parser')
+        
+        # rewrite html
+        soup, resources = rewrite_soup(configuration, soup, html_file, html_root_dir)
+        additional_resources = additional_resources.union(resources)
+
+        # Export fixed html
+        fixed_html = soup.prettify("utf-8")
+        with open(html_file, 'wb') as o_fd:
+            o_fd.write(fixed_html)
+
+    return additional_resources
+
+
+def download_additional_resources(configuration : Configuration, documents_dir : str, resources_to_dl : set = set()):
+    """ Download optional resources for "beautification """
+
+    for resource in resources_to_dl:
+        
+        download_textfile(
+            resource.url, 
+            os.path.join(documents_dir, resource.path)
+        )
+
+    # Download index start page
+    index_url = Configuration.default_url % configuration.powershell_version
+    index_filepath = os.path.join(documents_dir, Configuration.domain, "en-us", "index.html")
+
+    soup = bs( configuration.webdriver.get_url_page(index_url), 'html.parser')
+    soup = rewrite_index_soup(configuration, soup, index_filepath, documents_dir)
+    fixed_html = soup.prettify("utf-8")
+    with open(index_filepath, 'wb') as o_fd:
+            o_fd.write(fixed_html)
+
+
+    # Download module.svg icon for start page
+    icon_module_url  =     '/'.join(["https:/"   , Configuration.domain, "en-us", "media", "toolbars", "module.svg"])
+    icon_module_path = os.path.join(documents_dir, Configuration.domain, "en-us", "media", "toolbars", "module.svg")
+    download_binary(icon_module_url, icon_module_path)
+
+
+def create_sqlite_database(configuration, content_toc, resources_dir, documents_dir):
+    """ Indexing the html document in a format Dash can understand """
+
+    def insert_into_sqlite_db(cursor, name, record_type, path):
+        """ Insert a new unique record in the sqlite database. """
+        try:
+            cursor.execute('SELECT rowid FROM searchIndex WHERE path = ?', (path,))
+            dbpath = cursor.fetchone()
+            cursor.execute('SELECT rowid FROM searchIndex WHERE name = ?', (name,))
+            dbname = cursor.fetchone()
+
+            if dbpath is None and dbname is None:
+                cursor.execute('INSERT OR IGNORE INTO searchIndex(name, type, path) VALUES (?,?,?)', (name, record_type, path))
+                logging.debug('DB add [%s] >> name: %s, path: %s' % (record_type, name, path))
+            else:
+                logging.debug('record exists')
+
+        except:
+            pass
+
+    sqlite_filepath = os.path.join(resources_dir, "docSet.dsidx")
+    if os.path.exists(sqlite_filepath):
+        os.remove(sqlite_filepath)
+
+    db = sqlite3.connect(sqlite_filepath)
+    cur = db.cursor()
+    cur.execute('CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);')
+    cur.execute('CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);')
 
     
+    for module_name, module in content_toc.items():
 
-def copy_folder(src_folder, dst_folder):
+        insert_into_sqlite_db(cur, module_name, "Module", module['index'])
+
+        for cmdlet in module['cmdlets']:
+            
+            cmdlet_name = cmdlet['name']
+            if cmdlet_name == module_name:
+                continue
+
+            insert_into_sqlite_db(cur, cmdlet_name, "Cmdlet", cmdlet['path'])
+        
+
+    # commit and close db
+    db.commit()
+    db.close()
+
+def copy_folder(src_folder : str, dst_folder : str):
+    """ Copy a full folder tree anew every time """
 
     def onerror(func, path, exc_info):
         """
@@ -511,15 +768,32 @@ def main(configuration : Configuration):
     content_toc = crawl_posh_contents(configuration, download_dir)
 
 
-    # Parse and rewrite html contents
+    """ 2.  Parse and rewrite html contents """
     copy_folder(download_dir, html_rewrite_dir)
-    rewrite_html_contents(configuration, html_rewrite_dir)
+    resources_to_dl = rewrite_html_contents(configuration, html_rewrite_dir)
 
-    # Download additionnal resources
+    """ 3.  Download additionnal resources """
+    copy_folder(html_rewrite_dir, additional_resources_dir )
+    download_additional_resources(configuration, additional_resources_dir, resources_to_dl)
 
-    # Database indexing
+    """ 4.  Database indexing """
+    copy_folder(additional_resources_dir, document_dir )
+    create_sqlite_database(configuration, content_toc, resources_dir, document_dir)
 
-    # Archive packaging
+    """ 5.  Archive packaging """
+    shutil.copy("static/Info.plist", content_dir)
+    shutil.copy("static/DASH_LICENSE", os.path.join(resources_dir, "LICENSE"))
+    shutil.copy("static/icon.PNG", docset_dir)
+    shutil.copy("static/icon@2x.PNG", docset_dir)
+
+    version_output_dir = os.path.join(configuration.output_folder, "versions", "%s" % configuration.powershell_version)
+    os.makedirs(version_output_dir, exist_ok=True)
+
+    make_docset(
+        docset_dir,
+        version_output_dir,
+        Configuration.docset_name
+    )
 
 
 def old_main(configuration : Configuration):
