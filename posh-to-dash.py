@@ -83,7 +83,7 @@ class Configuration:
         self.powershell_version_param = "view=powershell-{0:s}".format(self.powershell_version)
 
         # build folder (must be cleaned afterwards)
-        self.build_folder = os.path.join(args.output, "_build")
+        self.build_folder = os.path.join(args.output, "_build_{0:s}".format(self.powershell_version))
 
         # output folder
         self.output_folder = args.output
