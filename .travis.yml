@@ -1,0 +1,15 @@
+language: python
+dist: trusty
+python:
+  - "3.6"
+
+install:
+  - pip install selenium requests bs4
+  
+  
+script:
+  -python .\posh-to-dash.py -verbose --temporary --version=6
+  # -python .\posh-to-dash.py -verbose --temporary --version=5.1
+  # -python .\posh-to-dash.py -verbose --temporary --version=5.0
+  # -python .\posh-to-dash.py -verbose --temporary --version=4.0
+  # -python .\posh-to-dash.py -verbose --temporary --version=3.0
