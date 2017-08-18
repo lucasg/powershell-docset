@@ -2,6 +2,7 @@
 
 import sqlite3
 import os
+import sys
 import glob
 import re
 import shutil
@@ -71,8 +72,6 @@ class Configuration:
     # default_toc = "https://docs.microsoft.com/api/apibrowser/powershell/modules?moniker=powershell-%s&api-version=%s"
     default_toc = "https://%s/psdocs/toc.json" % (base_url)
 
-    path_to_phantomjs = "C:\\Users\\lucas\\AppData\\Roaming\\npm\\node_modules\\phantomjs-prebuilt\\lib\\phantom\\bin\phantomjs.exe"
-
     def __init__(self, args):
 
         
@@ -99,7 +98,7 @@ class Configuration:
         )
 
         # selenium webdriver
-        self.webdriver = PoshWebDriver(Configuration.path_to_phantomjs)
+        self.webdriver = PoshWebDriver(args.phantom)
 
 
 
@@ -688,6 +687,11 @@ if __name__ == '__main__':
     parser.add_argument("-o", "--output", 
         help="set output directory", 
         default = os.getcwd(),
+    )
+
+    parser.add_argument("-p", "--phantom", 
+        help="path to phantomjs executable", 
+        default = None,
     )
 
     args = parser.parse_args()
