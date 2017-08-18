@@ -1,32 +1,30 @@
 language: python
 dist: precise
 python:
-  - "3.6"
+- '3.6'
 
 # Used to properly name build artifacts
 env:
-  - ARTIFACT_NAME="posh-docsets-`git describe --tags`.zip"
+- ARTIFACT_NAME="posh-docsets-`git describe --tags`.zip"
 
 deploy:
-  - provider: releases
-    file: $ARTIFACT_NAME
-    skip_cleanup: true
-    on:
-      tags: true
+  provider: releases
+  api_key:
+    secure: OgdIHS3FL7+VbfbOYBXDImtiZztgis8ur0iQ+oMnY9+ulUKZsSd2hBuzp/a2+ErJq+HoSsEJDKQcIDSGrNQr0nFpyulOpo2XAcoIsB9Fy62IcMxYJFcCesjY1nQZ62MY/wk70sYrh1SGfiGhALzi5Jd6+kagDByNG3qBczEsr8bmIHSPPANMuzlRz98NjcNiTqk/fh+n2inzcl63G2dIhL8z5pPim2xQGBITYwJUdRut/TBRhazYUPzNQm40klo8rGTAloLFU1DIwkaN8tB9e0QyZvEFhxP6b8lND1nhFcmrUHd2Rk/VYp9FrNjC2JgyokQ1gBCmI0z9ymuu1vIM8K3Bo6cTDuWEt2To352YD8k7FCeYIhS8Z0pc+K++J8Jwakb5HE10dbw+Tmc2fY2LMV/v3f5EQFk5ghIHWrj6V0PQLgIsZ3bzvdeWIvnoKt+3VzbLYHOUHHTfhx86xt3mxPp+tQFdbhrxit0LZd9lUstgNDyspqNTCnL4Evue8+qgUFXcTidjmvKVr9Shf2qoASnbVXMenERwq05YOZU+ETzp6m6ihS8rHbwXkAnNSWpRNOlMLQmlCOs+TyFjFvHV0jDg4SByWLwujenfQwDdXCrxAWtt+z6HFzgtSXPOYcm1e46tAAHKYVVelRh3CiAx5V/Exu76Y2cDqfAtbAzHphI=
+  file: $ARTIFACT_NAME
+  on:
+    repo: lucasg/powershell-docset
 
-# Automatically push artifacts to Amazon S3
 addons:
   artifacts: true
 
 install:
-  - pip install selenium requests bs4
-    
-script:
-  - python posh-to-dash.py --verbose --temporary --version=6
-  - python posh-to-dash.py --verbose --temporary --version=5.1
-  - python posh-to-dash.py --verbose --temporary --version=5.0
-  - python posh-to-dash.py --verbose --temporary --version=4.0
-  - python posh-to-dash.py --verbose --temporary --version=3.0
+- pip install selenium requests bs4
 
-  # Zipping the whole folder before deploy to Github Releases
-  - zip -r $ARTIFACT_NAME versions
+script:
+- python posh-to-dash.py --verbose --temporary --version=6
+- python posh-to-dash.py --verbose --temporary --version=5.1
+- python posh-to-dash.py --verbose --temporary --version=5.0
+- python posh-to-dash.py --verbose --temporary --version=4.0
+- python posh-to-dash.py --verbose --temporary --version=3.0
+- zip -r $ARTIFACT_NAME versions
