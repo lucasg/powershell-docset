@@ -5,7 +5,7 @@ python:
 
 # Used to properly name build artifacts
 env:
-  - ARTIFACT_NAME = posh-docsets-`git describe --tags`.zip
+  - ARTIFACT_NAME="posh-docsets-`git describe --tags`.zip"
 
 deploy:
   - provider: releases
