@@ -566,8 +566,8 @@ def main(configuration : Configuration):
     """ 5.  Archive packaging """
     shutil.copy("static/Info.plist", content_dir)
     shutil.copy("static/DASH_LICENSE", os.path.join(resources_dir, "LICENSE"))
-    shutil.copy("static/icon.PNG", docset_dir)
-    shutil.copy("static/icon@2x.PNG", docset_dir)
+    shutil.copy("static/icon.png", docset_dir)
+    shutil.copy("static/icon@2x.png", docset_dir)
 
     version_output_dir = os.path.join(configuration.output_folder, "versions", "%s" % configuration.powershell_version)
     os.makedirs(version_output_dir, exist_ok=True)
