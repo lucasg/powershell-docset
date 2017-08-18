@@ -3,13 +3,33 @@ dist: precise
 python:
   - "3.6"
 
+# Used to properly name build artifacts
+env:
+  - ARTIFACT_NAME = posh-docsets-`git describe --tags`.zip
+
+# Zipping the whole folder before deploy to Github Releases
+before_deploy:
+  - zip -r $ARTIFACT_NAME versions
+
+deploy:
+  - provider: releases
+    api_key: "GITHUB OAUTH TOKEN"
+    file: $ARTIFACT_NAME
+    skip_cleanup: true
+    on:
+      tags: true
+
+# Automatically push artifacts to Amazon S3
+addons:
+  artifacts: true
+
 install:
   - pip install selenium requests bs4
-  
-  
+    
 script:
   - python posh-to-dash.py --verbose --temporary --version=6
   # - python posh-to-dash.py --verbose --temporary --version=5.1
   # - python posh-to-dash.py --verbose --temporary --version=5.0
   # - python posh-to-dash.py --verbose --temporary --version=4.0
   # - python posh-to-dash.py --verbose --temporary --version=3.0
+  
