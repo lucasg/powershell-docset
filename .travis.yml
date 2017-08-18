@@ -9,7 +9,6 @@ env:
 
 deploy:
   - provider: releases
-    api_key: "GITHUB OAUTH TOKEN"
     file: $ARTIFACT_NAME
     skip_cleanup: true
     on:
