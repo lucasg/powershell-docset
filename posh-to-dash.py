@@ -351,6 +351,8 @@ def rewrite_index_soup(configuration : Configuration, soup, index_html_path : st
     # remove script elems
     for head_script in soup.head.findAll("script"):
             _ = head_script.extract()
+    for body_async_script in soup.body.findAll("script", { "async" : "",  "defer" : ""}):
+            _ = head_script.extract()
 
     # Fixing and downloading css stylesheets
     theme_output_dir = os.path.join(documents_dir, Configuration.domain)
