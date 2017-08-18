@@ -69,7 +69,7 @@ class Configuration:
     default_url = "https://%s/?view=powershell-%%s" % (base_url)
     default_theme_uri = "_themes/docs.theme/master/en-us/_themes"
     # default_toc = "https://docs.microsoft.com/api/apibrowser/powershell/modules?moniker=powershell-%s&api-version=%s"
-    default_toc = "https://%s/powershell-%%s/toc.json" % (base_url)
+    default_toc = "https://%s/psdocs/toc.json" % (base_url)
 
     path_to_phantomjs = "C:\\Users\\lucas\\AppData\\Roaming\\npm\\node_modules\\phantomjs-prebuilt\\lib\\phantom\\bin\phantomjs.exe"
 
@@ -92,7 +92,7 @@ class Configuration:
         self.docs_index_url = Configuration.default_url % self.powershell_version
 
         # powershell docs table of contents url
-        self.docs_toc_url =  "https://{0:s}/powershell-{1:s}/toc.json?{2:s}".format(
+        self.docs_toc_url =  "https://{0:s}/psdocs/toc.json?{2:s}".format(
             Configuration.base_url, 
             self.powershell_version,
             self.powershell_version_param
