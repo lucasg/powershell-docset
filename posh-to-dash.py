@@ -29,7 +29,11 @@ class PoshWebDriver:
     def __init__(self, executable_path = None):
 
         self.driver_exe_path = executable_path
-        self.driver = webdriver.PhantomJS(executable_path = self.driver_exe_path)
+
+        if self.driver_exe_path:
+            self.driver = webdriver.PhantomJS(executable_path = self.driver_exe_path)
+        else:
+            self.driver = webdriver.PhantomJS()
 
     def get_url_page(self, url):
         """ retrieve the full html content of a page after Javascript execution """
@@ -43,8 +47,13 @@ class PoshWebDriver:
             # Lay low for several seconds and get back to it.
 
             self.driver.quit()
-            self.driver = webdriver.PhantomJS(executable_path = self.driver_exe_path)
             time.sleep(2)
+            
+            if self.driver_exe_path:
+                self.driver = webdriver.PhantomJS(executable_path = self.driver_exe_path)
+            else:
+                self.driver = webdriver.PhantomJS()
+                
             index_html = None
 
         # try a second time, and raise error if fail
