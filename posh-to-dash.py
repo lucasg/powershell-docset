@@ -141,7 +141,7 @@ def make_docset(source_dir, dst_filepath, filename):
     Tar-gz the build directory while conserving the relative folder tree paths. 
     Copied from : https://stackoverflow.com/a/17081026/1741450 
     """
-    
+    dst_dir = os.path.dirname(dst_filepath)
     tar_filepath = os.path.join(dst_dir, '%s.tar' % filename)
     
     with tarfile.open(tar_filepath, "w:gz") as tar:
