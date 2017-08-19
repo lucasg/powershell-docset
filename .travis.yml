@@ -30,4 +30,8 @@ script:
 - python posh-to-dash.py --verbose --temporary --output=Powershell/versions/4.0/Powershell.tgz --version=4.0
 - python posh-to-dash.py --verbose --temporary --output=Powershell/versions/3.0/Powershell.tgz --version=3.0
 
+- cp static/icon.PNG Powershell/icon.png
+- cp static/icon@2x.PNG Powershell/icon@2x.png
+- cp Powershell/versions/6/Powershell.tgz Powershell/Powershell.tgz
+
 - zip -r $ARTIFACT_NAME Powershell
