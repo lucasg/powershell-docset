@@ -10,8 +10,9 @@
 ## Releases
 
 * [v0.1 -- Minimal working version](https://github.com/lucasg/powershell-docset/releases/tag/v0.1)
-* [v0.2 -- Minimal working version](https://github.com/lucasg/powershell-docset/releases/tag/v0.2)
-* [v0.3 -- Minimal working version](https://github.com/lucasg/powershell-docset/releases/tag/v0.3)
+* [v0.2 -- Offline mode supported](https://github.com/lucasg/powershell-docset/releases/tag/v0.2)
+* [v0.3 -- travis setup](https://github.com/lucasg/powershell-docset/releases/tag/v0.3)
+* [v0.4 -- user contributed docset](https://github.com/lucasg/powershell-docset/releases/tag/v0.4)
 
 ## Create docset from sources
 
