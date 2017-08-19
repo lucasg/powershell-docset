@@ -93,8 +93,8 @@ class Configuration:
         # build folder (must be cleaned afterwards)
         self.build_folder = os.path.join(args.output, "_build_{0:s}".format(self.powershell_version))
 
-        # output folder
-        self.output_folder = args.output
+        # output file
+        self.output_filepath = args.output
 
         # powershell docs start page
         self.docs_index_url = Configuration.default_url % self.powershell_version
@@ -136,21 +136,19 @@ def download_textfile(url : str ,  output_filename : str, params : dict = None):
         f.write(r.text)
 
 
-def make_docset(source_dir, dst_dir, filename):
+def make_docset(source_dir, dst_filepath, filename):
     """ 
     Tar-gz the build directory while conserving the relative folder tree paths. 
     Copied from : https://stackoverflow.com/a/17081026/1741450 
     """
     
     tar_filepath = os.path.join(dst_dir, '%s.tar' % filename)
-    targz_filepath = os.path.join(dst_dir, '%s.tar.gz' % filename)
-    docset_filepath = os.path.join(dst_dir, '%s.docset' % filename)
-
+    
     with tarfile.open(tar_filepath, "w:gz") as tar:
         tar.add(source_dir, arcname=os.path.basename(source_dir))
 
-    shutil.move(tar_filepath, targz_filepath)
-    shutil.move(targz_filepath, docset_filepath) # can conflict with build dir name
+    shutil.move(tar_filepath, dst_filepath)
+    
 
 
 def download_page_contents(configuration, uri, output_filepath):
@@ -569,12 +567,12 @@ def main(configuration : Configuration):
     shutil.copy("static/icon.png", docset_dir)
     shutil.copy("static/icon@2x.png", docset_dir)
 
-    version_output_dir = os.path.join(configuration.output_folder, "versions", "%s" % configuration.powershell_version)
-    os.makedirs(version_output_dir, exist_ok=True)
+    output_dir = os.path.dirname(configuration.output_filepath)
+    os.makedirs(output_dir, exist_ok=True)
 
     make_docset(
         docset_dir,
-        version_output_dir,
+        configuration.output_filepath,
         Configuration.docset_name
     )
 
@@ -643,7 +641,7 @@ def old_main(configuration : Configuration):
                 continue
 
             cmdlet_name, html_ext = os.path.splitext(cmdlet_filename)
-            insert_into_sqlite_db(cur, cmdlet_name, "Cmdlet", "%s/%s/%s" % (base_url, module_name, cmdlet_filename))
+            insert_into_sqlite_db(cur, cmdlet_name, "Command", "%s/%s/%s" % (base_url, module_name, cmdlet_filename))
         
 
     # commit and close db
@@ -694,8 +692,8 @@ if __name__ == '__main__':
     )
 
     parser.add_argument("-o", "--output", 
-        help="set output directory", 
-        default = os.getcwd(),
+        help="set output filepath", 
+        default = os.path.join(os.getcwd(), "Powershell.tgz"),
     )
 
     parser.add_argument("-p", "--phantom", 
