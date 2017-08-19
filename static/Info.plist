@@ -21,7 +21,7 @@
 	<string>posh</string>
 
 	<key>isDashDocset</key>
-	<false/>
+	<true/>
 
 	<key>isJavaScriptEnabled</key>
 	<false/>
