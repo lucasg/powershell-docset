@@ -476,7 +476,7 @@ def create_sqlite_database(configuration, content_toc, resources_dir, documents_
             if cmdlet_name == module_name:
                 continue
 
-            insert_into_sqlite_db(cur, cmdlet_name, "Cmdlet", cmdlet['path'])
+            insert_into_sqlite_db(cur, cmdlet_name, "Command", cmdlet['path'])
         
 
     # commit and close db
