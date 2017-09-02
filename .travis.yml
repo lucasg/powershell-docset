@@ -6,7 +6,7 @@ python:
 # Used to properly name build artifacts
 env:
   global:
-    - ARTIFACT_VER=`git describe --tags`
+    - ARTIFACT_VER="`git describe --tags`"
     - ARTIFACT_NAME="posh-docsets-$ARTIFACT_VER.zip"
 
 deploy:
