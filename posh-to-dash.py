@@ -305,28 +305,30 @@ def rewrite_index_soup(configuration : Configuration, soup, index_html_path : st
     """ rewrite html contents by fixing links and remove unnecessary cruft """
 
     # Fix navigations links
-    content_table = soup.findAll("table", { "class" : "api-search-results standalone"})[0]
-    links = content_table.findAll(lambda tag: tag.name == 'a' and 'ms.title' in tag.attrs)
-    link_pattern = re.compile(r"([\w\.\/]+)\?view=powershell-")
+    content_tables = soup.findAll("table", { "class" : "api-search-results", "ms.cmpnm" : "api-search-results"})
+    for content_table in content_tables:
 
-    for link in links:
+        links = content_table.findAll(lambda tag: tag.name == 'a' and 'ms.title' in tag.attrs)
+        link_pattern = re.compile(r"([\w\.\/]+)\?view=powershell-")
 
-        href = link['href']
-        fixed_href = href
+        for link in links:
+
+            href = link['href']
+            fixed_href = href
 
 
-        targets = link_pattern.findall(href)
-        if not len(targets): # badly formated 'a' link
-            continue
+            targets = link_pattern.findall(href)
+            if not len(targets): # badly formated 'a' link
+                continue
 
-        url_path = targets[0].lstrip('/').rstrip('/')
-        module_name = link.attrs['ms.title']
+            url_path = targets[0].lstrip('/').rstrip('/')
+            module_name = link.attrs['ms.title']
 
-        fixed_href = "%s/%s.html" % (url_path, module_name)
-        
-        if fixed_href != href:
-            logging.debug("link rewrite : %s -> %s " % ( href, fixed_href))
-            link['href'] = fixed_href
+            fixed_href = "%s/%s.html" % (url_path, module_name)
+            
+            if fixed_href != href:
+                logging.debug("link rewrite : %s -> %s " % ( href, fixed_href))
+                link['href'] = fixed_href
 
     # Fix link to module.svg
     module_svg_path = os.path.join(documents_dir, Configuration.domain, "en-us", "media", "toolbars", "module.svg")
