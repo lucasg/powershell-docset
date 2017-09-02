@@ -6,7 +6,7 @@ from datetime import datetime
 docset_json = """
 {
     "name": "Powershell",
-    "version": %s/%s,
+    "version": "%s/%s",
     "archive": "Powershell.tgz",
     "author": {
         "name": "lucasg",
