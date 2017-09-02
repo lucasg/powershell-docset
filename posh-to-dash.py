@@ -94,7 +94,7 @@ class Configuration:
         self.build_folder = os.path.join(os.getcwd(), "_build_{0:s}".format(self.powershell_version))
 
         # output file
-        self.output_filepath = args.output
+        self.output_filepath = os.path.realpath(args.output)
 
         # powershell docs start page
         self.docs_index_url = Configuration.default_url % self.powershell_version
