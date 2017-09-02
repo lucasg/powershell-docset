@@ -3,8 +3,7 @@ import shutil
 import argparse
 from datetime import datetime
 
-docset_json = """
-{
+docset_json = """{
     "name": "Powershell",
     "version": "%s/%s",
     "archive": "Powershell.tgz",
@@ -18,9 +17,7 @@ docset_json = """
                 "Windows automation"],
 
     "specific_versions": [
-        {
-            "_comment": ""
-        },
+
         { 
             "version": "6",
             "archive": "versions/6/Powershell.tgz",
