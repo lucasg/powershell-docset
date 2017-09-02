@@ -5,7 +5,8 @@ python:
 
 # Used to properly name build artifacts
 env:
-- ARTIFACT_NAME="posh-docsets-`git describe --tags`.zip"
+- ARTIFACT_VER=`git describe --tags`
+- ARTIFACT_NAME="posh-docsets-$ARTIFACT_VER.zip"
 
 deploy:
   provider: releases
@@ -21,10 +22,19 @@ deploy:
 addons:
   artifacts: true
 
+notifications:
+  email:
+    recipients:
+      - lucas.georges@outlook.com
+    on_success: never # default: change
+    on_failure: always # default: always
+
 install:
 - pip install selenium requests bs4
 
 script:
+- mkdir -p Powershell
+
 - python posh-to-dash.py --verbose --temporary --output=Powershell/versions/6/Powershell.tgz --version=6
 - python posh-to-dash.py --verbose --temporary --output=Powershell/versions/5.1/Powershell.tgz --version=5.1
 - python posh-to-dash.py --verbose --temporary --output=Powershell/versions/5.0/Powershell.tgz --version=5.0
@@ -34,5 +44,8 @@ script:
 - cp static/icon.png Powershell/icon.png
 - cp static/icon@2x.png Powershell/icon@2x.png
 - cp Powershell/versions/6/Powershell.tgz Powershell/Powershell.tgz
+
+- cp static/docset-template/README.md Powershell/icon.png
+- python static/docset-template/create-versionned-docset-json.py --output=Powershell/docset.json --version=$ARTIFACT_VER
 
 - zip -r $ARTIFACT_NAME Powershell
