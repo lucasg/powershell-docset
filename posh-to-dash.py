@@ -17,6 +17,8 @@ import time
 import collections
 
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from bs4 import BeautifulSoup as bs, Tag # pip install bs4
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys  
@@ -110,28 +112,36 @@ class Configuration:
         self.webdriver = PoshWebDriver(args.phantom)
 
 
+# Global session for several retries
+session = requests.Session()
+retries = Retry(total=5, backoff_factor=1, status_forcelist=[ 502, 503, 504 ])
+session.mount('http://', HTTPAdapter(max_retries=retries))
+
 
 def download_binary(url, output_filename):
     """ Download GET request as binary file """
+    global session
+    
     logging.debug("download_binary : %s -> %s" % (url, output_filename))
 
     # ensure the folder path actually exist
     os.makedirs(os.path.dirname(output_filename), exist_ok = True)
 
-    r = requests.get(url, stream=True)
+    r = session.get(url, stream=True)
     with open(output_filename, 'wb') as f:
         for data in r.iter_content(32*1024):
             f.write(data)
 
 def download_textfile(url : str ,  output_filename : str, params : dict = None):
     """ Download GET request as utf-8 text file """
+    global session
 
     logging.debug("download_textfile : %s -> %s" % (url, output_filename))
 
     # ensure the folder path actually exist
     os.makedirs(os.path.dirname(output_filename), exist_ok = True)
     
-    r = requests.get(url, data = params)
+    r = session.get(url, data = params)
     with open(output_filename, 'w', encoding="utf8") as f:
         f.write(r.text)
 
