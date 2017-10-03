@@ -340,11 +340,11 @@ def rewrite_index_soup(configuration : Configuration, soup, index_html_path : st
                 logging.debug("link rewrite : %s -> %s " % ( href, fixed_href))
                 link['href'] = fixed_href
 
-    # Fix link to module.svg
-    module_svg_path = os.path.join(documents_dir, Configuration.domain, "en-us", "media", "toolbars", "module.svg")
-    images = content_table.findAll("img" , {'alt' : "Module"})
-    for image in images:
-        image['src'] =  os.path.relpath(module_svg_path, os.path.dirname(index_html_path))
+        # Fix link to module.svg
+        module_svg_path = os.path.join(documents_dir, Configuration.domain, "en-us", "media", "toolbars", "module.svg")
+        images = content_table.findAll("img" , {'alt' : "Module"})
+        for image in images:
+            image['src'] =  os.path.relpath(module_svg_path, os.path.dirname(index_html_path))
 
     # remove unsupported nav elements
     nav_elements = [
