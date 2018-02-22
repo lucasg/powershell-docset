@@ -45,7 +45,7 @@ script:
 - cp static/icon@2x.png Powershell/icon@2x.png
 - cp Powershell/versions/6/Powershell.tgz Powershell/Powershell.tgz
 
-- cp static/docset-template/README.md Powershell/icon.png
+- cp static/docset-template/README.md Powershell/README.md
 - python static/docset-template/create-versionned-docset-json.py --output=Powershell/docset.json --version=$ARTIFACT_VER
 
 - zip -r $ARTIFACT_NAME Powershell
