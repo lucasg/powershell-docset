@@ -111,6 +111,9 @@ class Configuration:
         # selenium webdriver
         self.webdriver = PoshWebDriver(args.phantom)
 
+        # selected module
+        self.filter_modules = [module.lower() for module in args.modules]
+
 
 # Global session for several retries
 session = requests.Session()
@@ -218,8 +221,17 @@ def crawl_posh_contents(configuration : Configuration, download_dir : str):
     # modules_toc is a web based TOC, where as content_toc is file based
     content_toc = {}
 
+    logging.debug("raw modules : %s" % [m['toc_title'] for m in modules_toc['items'][0]['children']])
+
+    # optionnal filter on selected module
+    modules = modules_toc['items'][0]['children']
+    if configuration.filter_modules:
+        logging.debug("filtering : %s" %  configuration.filter_modules)
+        modules = list(filter(lambda m: m['toc_title'].lower() in configuration.filter_modules, modules))
+        logging.debug("filtered modules : %s" % [m['toc_title'] for m in modules])
+
     # Downloading modules contents
-    for module in modules_toc['items'][0]['children']:
+    for module in modules:
 
         module_name = module['toc_title']
         module_uri = module["href"]
@@ -551,6 +563,9 @@ def main(configuration : Configuration):
     additional_resources_dir = os.path.join(configuration.build_folder, "_3_additional_resources")
     package_dir = os.path.join(configuration.build_folder, "_4_ready_to_be_packaged")
 
+    for folder in [download_dir, html_rewrite_dir, additional_resources_dir, package_dir]:
+        os.makedirs(folder, exist_ok=True)
+
     # _4_ready_to_be_packaged is the final build dir
     docset_dir = os.path.join(package_dir, "%s.docset" % Configuration.docset_name)
     content_dir = os.path.join(docset_dir , "Contents")
@@ -629,6 +644,13 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--phantom", 
         help="path to phantomjs executable", 
         default = None,
+    )
+
+    parser.add_argument("-m", "--modules", 
+        help="filter on selected modules", 
+        default = None,
+        type=str,
+        nargs='+'
     )
 
     args = parser.parse_args()
