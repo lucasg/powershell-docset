@@ -80,9 +80,7 @@ class Configuration:
     base_url = "%s/en-us/powershell/module" % domain
     default_url = "https://%s/?view=powershell-%%s" % (base_url)
     default_theme_uri = "_themes/docs.theme/master/en-us/_themes"
-    # default_toc = "https://docs.microsoft.com/api/apibrowser/powershell/modules?moniker=powershell-%s&api-version=%s"
-    default_toc = "https://%s/psdocs/toc.json" % (base_url)
-
+    
     def __init__(self, args):
 
         
@@ -106,6 +104,10 @@ class Configuration:
             Configuration.base_url, 
             self.powershell_version,
             self.powershell_version_param
+        )
+
+        self.windows_toc_url = "https://{0:s}/win10-ps/toc.json?view=win10-ps".format(
+            Configuration.base_url
         )
 
         # selenium webdriver
@@ -210,12 +212,12 @@ def download_module_contents(configuration, module_name, module_uri, module_dir,
 
     return module_infos
 
-def crawl_posh_contents(configuration : Configuration, download_dir : str):
+def crawl_posh_contents(configuration: Configuration, toc_url : str, download_dir : str, ):
     """ Download Powershell modules and cmdlets content pages based on TOC """
 
     # Download toc
-    logging.debug("Downloading powershell toc : %s" % (configuration.docs_toc_url))
-    r = requests.get(configuration.docs_toc_url)
+    logging.debug("Downloading powershell toc : %s" % (toc_url))
+    r = requests.get(toc_url)
     modules_toc = json.loads(r.text)
 
     # modules_toc is a web based TOC, where as content_toc is file based
@@ -572,7 +574,9 @@ def main(configuration : Configuration):
     document_dir = os.path.join(resources_dir, "Documents")
 
     """ 1. Download html pages """
-    content_toc = crawl_posh_contents(configuration, download_dir)
+    content_toc = crawl_posh_contents(configuration, configuration.docs_toc_url, download_dir)
+    windows_toc = crawl_posh_contents(configuration, configuration.windows_toc_url, download_dir)
+    content_toc.update(windows_toc)
 
 
     """ 2.  Parse and rewrite html contents """
