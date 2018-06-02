@@ -223,10 +223,9 @@ def crawl_posh_contents(configuration : Configuration, download_dir : str):
 
     logging.debug("raw modules : %s" % [m['toc_title'] for m in modules_toc['items'][0]['children']])
 
-    # optionnal filter on selected module
+    # optional filter on selected module
     modules = modules_toc['items'][0]['children']
-    if configuration.filter_modules:
-        logging.debug("filtering : %s" %  configuration.filter_modules)
+    if len(configuration.filter_modules):
         modules = list(filter(lambda m: m['toc_title'].lower() in configuration.filter_modules, modules))
         logging.debug("filtered modules : %s" % [m['toc_title'] for m in modules])
 
@@ -648,7 +647,7 @@ if __name__ == '__main__':
 
     parser.add_argument("-m", "--modules", 
         help="filter on selected modules", 
-        default = None,
+        default = [],
         type=str,
         nargs='+'
     )
