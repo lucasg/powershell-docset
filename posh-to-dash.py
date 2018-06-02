@@ -249,7 +249,7 @@ def rewrite_soup(configuration : Configuration, soup, html_path : str, documents
 
     # Fix navigations links
     links = soup.findAll("a", { "data-linktype" : "relative-path"}) # for modules and cmdlet pages
-    link_pattern = re.compile(r"(\w+-\w+)\?view=powershell-")
+    link_pattern = re.compile(r"([\w\.\/]+)\?view=[powershell-|win10-ps]")
 
     for link in links:
 
@@ -332,7 +332,7 @@ def rewrite_index_soup(configuration : Configuration, soup, index_html_path : st
     for content_table in content_tables:
 
         links = content_table.findAll(lambda tag: tag.name == 'a' and 'ms.title' in tag.attrs)
-        link_pattern = re.compile(r"([\w\.\/]+)\?view=powershell-")
+        link_pattern = re.compile(r"([\w\.\/]+)\?view=[powershell-|win10-ps]")
 
         for link in links:
 
@@ -341,8 +341,8 @@ def rewrite_index_soup(configuration : Configuration, soup, index_html_path : st
 
 
             targets = link_pattern.findall(href)
-            if not len(targets): # badly formated 'a' link
-                continue
+            if not len(targets): 
+                continue # badly formated 'a' link
 
             url_path = targets[0].lstrip('/').rstrip('/')
             module_name = link.attrs['ms.title']
