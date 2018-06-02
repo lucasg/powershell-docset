@@ -239,6 +239,7 @@ def crawl_posh_contents(configuration: Configuration, toc_url : str, download_di
         module_cmdlets = module['children']
         module_dir = os.path.join(download_dir, Configuration.base_url, module_name)
 
+        logging.info("[+] download module %s" % (module_name))
         module_infos = download_module_contents(configuration, module_name, module_uri, module_dir,  module_cmdlets, download_dir)
         content_toc[module_name] = module_infos
 
@@ -574,20 +575,24 @@ def main(configuration : Configuration):
     document_dir = os.path.join(resources_dir, "Documents")
 
     """ 1. Download html pages """
+    logging.info("[1] scraping web contents")
     content_toc = crawl_posh_contents(configuration, configuration.docs_toc_url, download_dir)
     windows_toc = crawl_posh_contents(configuration, configuration.windows_toc_url, download_dir)
     content_toc.update(windows_toc)
 
 
     """ 2.  Parse and rewrite html contents """
+    logging.info("[2] rewriting urls and hrefs")
     copy_folder(download_dir, html_rewrite_dir)
     resources_to_dl = rewrite_html_contents(configuration, html_rewrite_dir)
 
     """ 3.  Download additionnal resources """
+    logging.info("[3] download style contents")
     copy_folder(html_rewrite_dir, additional_resources_dir )
     download_additional_resources(configuration, additional_resources_dir, resources_to_dl)
 
     """ 4.  Database indexing """
+    logging.info("[4] indexing to database")
     copy_folder(additional_resources_dir, document_dir )
     create_sqlite_database(configuration, content_toc, resources_dir, document_dir)
 
@@ -600,6 +605,7 @@ def main(configuration : Configuration):
     output_dir = os.path.dirname(configuration.output_filepath)
     os.makedirs(output_dir, exist_ok=True)
 
+    logging.info("[5] packaging as a dash docset")
     make_docset(
         docset_dir,
         configuration.output_filepath,
