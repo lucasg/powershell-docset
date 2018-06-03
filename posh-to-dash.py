@@ -21,21 +21,30 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from bs4 import BeautifulSoup as bs, Tag # pip install bs4
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys  
-from selenium.webdriver.chrome.options import Options
-
+from selenium.webdriver import Firefox
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 
 class PoshWebDriver:
     """ Thin wrapper for selenium webdriver for page content retrieval """
 
     def __init__(self, executable_path = None):
 
+        options = Options()
+        options.add_argument('-headless')
+
         self.driver_exe_path = executable_path
 
         if self.driver_exe_path:
-            self.driver = webdriver.PhantomJS(executable_path = self.driver_exe_path)
+            binary = FirefoxBinary(executable_path)
+            self.driver = webdriver.Firefox(
+                firefox_binary=binary,
+                firefox_options=options,
+            )
         else:
-            self.driver = webdriver.PhantomJS()
+            self.driver = webdriver.Firefox(
+                firefox_options=options
+            )
 
     def get_url_page(self, url):
         """ retrieve the full html content of a page after Javascript execution """
