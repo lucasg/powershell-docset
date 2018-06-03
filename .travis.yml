@@ -37,9 +37,9 @@ script:
 
 - python posh-to-dash.py --temporary --output=Powershell/versions/6/Powershell.tgz --version=6
 - python posh-to-dash.py --temporary --output=Powershell/versions/5.1/Powershell.tgz --version=5.1
-# - python posh-to-dash.py --temporary --output=Powershell/versions/5.0/Powershell.tgz --version=5.0
-# - python posh-to-dash.py --temporary --output=Powershell/versions/4.0/Powershell.tgz --version=4.0
-# - python posh-to-dash.py --temporary --output=Powershell/versions/3.0/Powershell.tgz --version=3.0
+- python posh-to-dash.py --temporary --output=Powershell/versions/5.0/Powershell.tgz --version=5.0
+- python posh-to-dash.py --temporary --output=Powershell/versions/4.0/Powershell.tgz --version=4.0
+- python posh-to-dash.py --temporary --output=Powershell/versions/3.0/Powershell.tgz --version=3.0
 
 - cp static/icon.png Powershell/icon.png
 - cp static/icon@2x.png Powershell/icon@2x.png
