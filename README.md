@@ -16,6 +16,9 @@
 * [v0.2 -- Offline mode supported](https://github.com/lucasg/powershell-docset/releases/tag/v0.2)
 * [v0.3 -- travis setup](https://github.com/lucasg/powershell-docset/releases/tag/v0.3)
 * [v0.4 -- user contributed docset](https://github.com/lucasg/powershell-docset/releases/tag/v0.4)
+* [v0.5 -- versionned docsets](https://github.com/lucasg/powershell-docset/releases/tag/v0.5)
+* [v0.6 -- windows 10 modules documentation](https://github.com/lucasg/powershell-docset/releases/tag/v0.6)
+
 
 ## Create docset from sources
 
