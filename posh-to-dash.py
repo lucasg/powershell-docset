@@ -561,6 +561,7 @@ def main(configuration : Configuration):
 
     """ 0. Prepare folders """
     download_dir = os.path.join(configuration.build_folder, "_1_downloaded_contents")
+    win10_download_dir = os.path.join(os.getcwd(), "_win10_downloaded_contents")
     html_rewrite_dir = os.path.join(configuration.build_folder, "_2_html_rewrite")
     additional_resources_dir = os.path.join(configuration.build_folder, "_3_additional_resources")
     package_dir = os.path.join(configuration.build_folder, "_4_ready_to_be_packaged")
@@ -577,9 +578,21 @@ def main(configuration : Configuration):
     """ 1. Download html pages """
     logging.info("[1] scraping web contents")
     content_toc = crawl_posh_contents(configuration, configuration.docs_toc_url, download_dir)
-    windows_toc = crawl_posh_contents(configuration, configuration.windows_toc_url, download_dir)
-    content_toc.update(windows_toc)
+    with open(os.path.join(download_dir, "toc.json"), "w") as content:
+        json.dump(content_toc, content)
 
+    # do not download twice the win10 api since it's quite a handful
+    if os.path.exists(os.path.join(win10_download_dir, "toc.json")):
+        with open(os.path.join(win10_download_dir, "toc.json"), "r") as content:
+            windows_toc = json.load(content)
+    else:
+        windows_toc = crawl_posh_contents(configuration, configuration.windows_toc_url, win10_download_dir)
+        with open(os.path.join(win10_download_dir, "toc.json"), "w") as content:
+                json.dump(windows_toc, content)
+        
+    # Merge win10 api content
+    copy_folder(win10_download_dir, download_dir)
+    content_toc.update(windows_toc)
 
     """ 2.  Parse and rewrite html contents """
     logging.info("[2] rewriting urls and hrefs")
