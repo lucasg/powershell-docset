@@ -547,6 +547,21 @@ def copy_folder(src_folder : str, dst_folder : str):
     shutil.rmtree(dst_folder,ignore_errors=False,onerror=onerror) 
     shutil.copytree(src_folder, dst_folder)
 
+def merge_folders(src, dst):
+    
+    if os.path.isdir(src):
+        
+        if not os.path.exists(dst):
+            os.makedirs(dst)
+        
+        for name in os.listdir(src):
+            merge_folders(
+                os.path.join(src, name),
+                os.path.join(dst, name)
+            )
+    else:
+        shutil.copyfile(src, dst)
+
 def main(configuration : Configuration):
 
     # """ Scheme for content toc : 
@@ -587,8 +602,6 @@ def main(configuration : Configuration):
     """ 1. Download html pages """
     logging.info("[1] scraping web contents")
     content_toc = crawl_posh_contents(configuration, configuration.docs_toc_url, download_dir)
-    with open(os.path.join(download_dir, "toc.json"), "w") as content:
-        json.dump(content_toc, content)
 
     # do not download twice the win10 api since it's quite a handful
     if os.path.exists(os.path.join(win10_download_dir, "toc.json")):
@@ -600,8 +613,10 @@ def main(configuration : Configuration):
                 json.dump(windows_toc, content)
         
     # Merge win10 api content
-    copy_folder(win10_download_dir, download_dir)
+    merge_folders(win10_download_dir, download_dir)
     content_toc.update(windows_toc)
+    with open(os.path.join(download_dir, "toc.json"), "w") as content:
+        json.dump(content_toc, content)
 
     """ 2.  Parse and rewrite html contents """
     logging.info("[2] rewriting urls and hrefs")
