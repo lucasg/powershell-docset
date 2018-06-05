@@ -338,11 +338,14 @@ def rewrite_index_soup(configuration : Configuration, soup, index_html_path : st
     """ rewrite html contents by fixing links and remove unnecessary cruft """
 
     # Fix navigations links
-    content_tables = soup.findAll("table", { "class" : "api-search-results", "ms.cmpnm" : "api-search-results"})
+    content_tables = soup.findAll("table", { 
+        "class" : "api-search-results"
+    })
+
     for content_table in content_tables:
 
-        links = content_table.findAll(lambda tag: tag.name == 'a' and 'ms.title' in tag.attrs)
-        link_pattern = re.compile(r"([\w\.\/-]+)\?view=[powershell-|win10-ps]")
+        links = content_table.findAll(lambda tag: tag.name == 'a')
+        link_pattern = re.compile(r"/powershell/module/([\w\.\-]+)/\?view=powershell-")
 
         for link in links:
 
@@ -354,10 +357,8 @@ def rewrite_index_soup(configuration : Configuration, soup, index_html_path : st
             if not len(targets): 
                 continue # badly formated 'a' link
 
-            url_path = targets[0].lstrip('/').rstrip('/')
-            module_name = link.attrs['ms.title']
-
-            fixed_href = "%s/%s.html" % (url_path, module_name)
+            module_name = targets[0].lstrip('/').rstrip('/')
+            fixed_href = "powershell/module/%s/%s.html" % (module_name, module_name)
             
             if fixed_href != href:
                 logging.debug("link rewrite : %s -> %s " % ( href, fixed_href))
