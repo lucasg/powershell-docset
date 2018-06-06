@@ -504,7 +504,9 @@ def create_sqlite_database(configuration, content_toc, resources_dir, documents_
     
     for module_name, module in content_toc.items():
 
-        insert_into_sqlite_db(cur, module_name, "Module", module['index'])
+        # path should be unix compliant
+        module_path = module['index'].replace(os.sep, '/')
+        insert_into_sqlite_db(cur, module_name, "Module", module_path)
 
         for cmdlet in module['cmdlets']:
             
