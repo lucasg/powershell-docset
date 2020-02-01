@@ -40,11 +40,11 @@ class PoshWebDriver:
             binary = FirefoxBinary(executable_path)
             self.driver = webdriver.Firefox(
                 firefox_binary=binary,
-                firefox_options=options,
+                options=options,
             )
         else:
             self.driver = webdriver.Firefox(
-                firefox_options=options
+                options=options
             )
 
     def get_url_page(self, url):
