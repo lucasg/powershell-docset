@@ -200,7 +200,8 @@ def download_module_contents(configuration, module_name, module_uri, module_dir,
     module_filepath = os.path.join(module_dir, "%s.html" % module_name)
 
     logging.debug("downloading %s module index page  -> %s" % (module_name, module_filepath))
-    download_page_contents(configuration, module_uri, module_filepath)
+    if module_uri:
+        download_page_contents(configuration, module_uri, module_filepath)
 
     cmdlets_infos = []
 
@@ -253,7 +254,7 @@ def crawl_posh_contents(configuration: Configuration, toc_url : str, download_di
     for module in modules:
 
         module_name = module['toc_title']
-        module_uri = module["href"]
+        module_uri = module.get("href")
         module_cmdlets = module['children']
         module_dir = os.path.join(download_dir, Configuration.base_url, module_name)
 
