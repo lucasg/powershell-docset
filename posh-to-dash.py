@@ -19,6 +19,7 @@ import collections
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from requests.exceptions import ConnectionError
 from bs4 import BeautifulSoup as bs, Tag # pip install bs4
 from selenium import webdriver
 from selenium.webdriver import Firefox
@@ -39,11 +40,11 @@ class PoshWebDriver:
             binary = FirefoxBinary(executable_path)
             self.driver = webdriver.Firefox(
                 firefox_binary=binary,
-                firefox_options=options,
+                options=options,
             )
         else:
             self.driver = webdriver.Firefox(
-                firefox_options=options
+                options=options
             )
 
     def get_url_page(self, url):
@@ -155,7 +156,15 @@ def download_textfile(url : str ,  output_filename : str, params : dict = None):
     # ensure the folder path actually exist
     os.makedirs(os.path.dirname(output_filename), exist_ok = True)
     
-    r = session.get(url, data = params)
+    while True:
+        try:
+            r = session.get(url, data = params)
+        except ConnectionError:
+            logging.debug("caught ConnectionError, retrying...")
+            time.sleep(2)
+        else:
+            break
+    
     with open(output_filename, 'w', encoding="utf8") as f:
         f.write(r.text)
 
@@ -191,7 +200,8 @@ def download_module_contents(configuration, module_name, module_uri, module_dir,
     module_filepath = os.path.join(module_dir, "%s.html" % module_name)
 
     logging.debug("downloading %s module index page  -> %s" % (module_name, module_filepath))
-    download_page_contents(configuration, module_uri, module_filepath)
+    if module_uri:
+        download_page_contents(configuration, module_uri, module_filepath)
 
     cmdlets_infos = []
 
@@ -244,7 +254,7 @@ def crawl_posh_contents(configuration: Configuration, toc_url : str, download_di
     for module in modules:
 
         module_name = module['toc_title']
-        module_uri = module["href"]
+        module_uri = module.get("href")
         module_cmdlets = module['children']
         module_dir = os.path.join(download_dir, Configuration.base_url, module_name)
 
