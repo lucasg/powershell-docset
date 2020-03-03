@@ -19,6 +19,7 @@ import collections
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from requests.exceptions import ConnectionError
 from bs4 import BeautifulSoup as bs, Tag # pip install bs4
 from selenium import webdriver
 from selenium.webdriver import Firefox
@@ -155,7 +156,15 @@ def download_textfile(url : str ,  output_filename : str, params : dict = None):
     # ensure the folder path actually exist
     os.makedirs(os.path.dirname(output_filename), exist_ok = True)
     
-    r = session.get(url, data = params)
+    while True:
+        try:
+            r = session.get(url, data = params)
+        except ConnectionError:
+            logging.debug("caught ConnectionError, retrying...")
+            time.sleep(2)
+        else:
+            break
+    
     with open(output_filename, 'w', encoding="utf8") as f:
         f.write(r.text)
 
