@@ -3,3 +3,5 @@ _win10_downloaded_contents
 geckodriver.log
 Powershell.tgz
 _build*
+geckodriver.log
+Pipfile*
