@@ -46,7 +46,7 @@ before_install:
 script:
 - mkdir -p Powershell
 
-- python posh-to-dash.py --temporary --output=Powershell/versions/6/Powershell.tgz --version=6 --phantom=$FIREFOX_PATH
+- python posh-to-dash.py --temporary --output=Powershell/versions/7.1/Powershell.tgz --version=7.1 --phantom=$FIREFOX_PATH
 # - python posh-to-dash.py --temporary --output=Powershell/versions/5.1/Powershell.tgz --version=5.1
 # - python posh-to-dash.py --temporary --output=Powershell/versions/5.0/Powershell.tgz --version=5.0
 # - python posh-to-dash.py --temporary --output=Powershell/versions/4.0/Powershell.tgz --version=4.0

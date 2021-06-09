@@ -116,7 +116,7 @@ class Configuration:
             self.powershell_version_param
         )
 
-        self.windows_toc_url = "https://{0:s}/win10-ps/toc.json?view=win10-ps".format(
+        self.windows_toc_url = "https://{0:s}/windowsserver2019-ps/toc.json?view=windowsserver2019-ps".format(
             Configuration.base_url
         )
 
@@ -269,7 +269,7 @@ def rewrite_soup(configuration : Configuration, soup, html_path : str, documents
 
     # Fix navigations links
     links = soup.findAll("a", { "data-linktype" : "relative-path"}) # for modules and cmdlet pages
-    link_pattern = re.compile(r"([\w\.\/-]+)\?view=[powershell-|win10-ps]")
+    link_pattern = re.compile(r"([\w\.\/-]+)\?view=[powershell-|windowsserver2019-ps]")
 
     for link in links:
 
@@ -650,10 +650,11 @@ def main(configuration : Configuration):
     create_sqlite_database(configuration, content_toc, resources_dir, document_dir)
 
     """ 5.  Archive packaging """
-    shutil.copy("static/Info.plist", content_dir)
-    shutil.copy("static/DASH_LICENSE", os.path.join(resources_dir, "LICENSE"))
-    shutil.copy("static/icon.png", docset_dir)
-    shutil.copy("static/icon@2x.png", docset_dir)
+    src_dir = os.path.dirname(__file__)
+    shutil.copy(os.path.join(src_dir, "static/Info.plist"), content_dir)
+    shutil.copy(os.path.join(src_dir, "static/DASH_LICENSE"), os.path.join(resources_dir, "LICENSE"))
+    shutil.copy(os.path.join(src_dir, "static/icon.png"), docset_dir)
+    shutil.copy(os.path.join(src_dir, "static/icon@2x.png"), docset_dir)
 
     output_dir = os.path.dirname(configuration.output_filepath)
     os.makedirs(output_dir, exist_ok=True)
@@ -681,8 +682,12 @@ if __name__ == '__main__':
 
     parser.add_argument("-v", "--version", 
         help="select powershell API versions", 
-        default = "6",
-        choices = ["3.0", "4.0", "5.0", "5.1", "6"]
+        default = "7.1",
+        choices = [
+            "5.1", 
+            "7.0",  # LTS
+            "7.1"   # current
+        ]
     )
 
     parser.add_argument("-t", "--temporary", 
