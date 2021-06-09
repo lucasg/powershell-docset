@@ -25,9 +25,10 @@ deploy:
     tags: true
 
 addons:
-  artifacts: true
+  artifacts:
+    # ⋮
     paths:
-      - $ARTIFACT_NAME
+    - $(ls *.zip | tr "\n" ":")
 
 notifications:
   email:
