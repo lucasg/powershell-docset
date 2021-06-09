@@ -26,6 +26,8 @@ deploy:
 
 addons:
   artifacts: true
+    paths:
+      - $ARTIFACT_NAME
 
 notifications:
   email:
