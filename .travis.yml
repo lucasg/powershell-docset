@@ -9,7 +9,6 @@ env:
     - ARTIFACT_NAME="posh-docsets-$ARTIFACT_VER.zip"
     - MOZ_HEADLESS=1
     - FIREFOX_PATH="`which firefox`"
-    - CHROME_VERSION="`/usr/bin/google-chrome --version | awk '{print $3}'`"
 
 addons:
   firefox: latest
@@ -43,7 +42,7 @@ install:
 - pip install selenium requests bs4
 
 before_install:
-  - echo "check ${CHROME_VERSION} is compatible with chromedriver version in https://chromedriver.chromium.org/downloads"
+  # dynamically resolve the correct chromedriver version to install from chrome's version
   - CHROME_MAIN_VERSION=`google-chrome-stable --version | sed -E 's/(^Google Chrome |\.[0-9]+ )//g'`
   - CHROMEDRIVER_VERSION=`curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_MAIN_VERSION"`
   - wget "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
@@ -51,15 +50,10 @@ before_install:
   - chmod +x chromedriver
   - export PATH=$PATH:$PWD/
 
-  # - wget https://github.com/mozilla/geckodriver/releases/download/v0.24.0/geckodriver-v0.24.0-linux64.tar.gz
-  # - mkdir geckodriver
-  # - tar -xzf geckodriver-v0.24.0-linux64.tar.gz -C geckodriver
-  # - export PATH=$PATH:$PWD/geckodriver
-
 script:
 - mkdir -p Powershell
 
-- python posh-to-dash.py --temporary --output=Powershell/versions/7.1/Powershell.tgz --version=7.1 --phantom=$FIREFOX_PATH
+- python posh-to-dash.py --temporary --output=Powershell/versions/7.1/Powershell.tgz --version=7.1
 # - python posh-to-dash.py --temporary --output=Powershell/versions/5.1/Powershell.tgz --version=5.1
 # - python posh-to-dash.py --temporary --output=Powershell/versions/5.0/Powershell.tgz --version=5.0
 # - python posh-to-dash.py --temporary --output=Powershell/versions/4.0/Powershell.tgz --version=4.0
@@ -70,6 +64,6 @@ script:
 - cp Powershell/versions/7.1/Powershell.tgz Powershell/Powershell.tgz
 
 - cp static/docset-template/README.md Powershell/README.md
-- python static/docset-template/create-versionned-docset-json.py --output=Powershell/docset.json --version=$ARTIFACT_VER
+- python static/docset-template/create-versioned-docset-json.py --output=Powershell/docset.json --version=$ARTIFACT_VER
 
 - zip -r $ARTIFACT_NAME Powershell
