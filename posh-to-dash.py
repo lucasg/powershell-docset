@@ -22,30 +22,36 @@ from requests.packages.urllib3.util.retry import Retry
 from requests.exceptions import ConnectionError
 from bs4 import BeautifulSoup as bs, Tag # pip install bs4
 from selenium import webdriver
-from selenium.webdriver import Firefox
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
+# from selenium.webdriver import Firefox
+# from selenium.webdriver.firefox.options import Options
+# from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
+
+from selenium.webdriver import Chrome
+from selenium.webdriver.chrome.options import Options
 
 class PoshWebDriver:
     """ Thin wrapper for selenium webdriver for page content retrieval """
 
     def __init__(self, executable_path = None):
 
-        options = Options()
-        options.add_argument('-headless')
+        self.options = Options()
+        self.options.add_argument("--headless")
+        self.options.add_argument("--window-size=1920x1080")
 
-        self.driver_exe_path = executable_path
+        self.driver = webdriver.Chrome(options=self.options)
 
-        if self.driver_exe_path:
-            binary = FirefoxBinary(executable_path)
-            self.driver = webdriver.Firefox(
-                firefox_binary=binary,
-                options=options,
-            )
-        else:
-            self.driver = webdriver.Firefox(
-                options=options
-            )
+        # self.driver_exe_path = executable_path
+
+        # if self.driver_exe_path:
+        #     binary = FirefoxBinary(executable_path)
+        #     self.driver = webdriver.Firefox(
+        #         firefox_binary=binary,
+        #         options=options,
+        #     )
+        # else:
+        #     self.driver = webdriver.Firefox(
+        #         options=options
+        #     )
 
     def get_url_page(self, url):
         """ retrieve the full html content of a page after Javascript execution """
@@ -61,10 +67,12 @@ class PoshWebDriver:
             self.driver.quit()
             time.sleep(2)
             
-            if self.driver_exe_path:
-                self.driver = webdriver.PhantomJS(executable_path = self.driver_exe_path)
-            else:
-                self.driver = webdriver.PhantomJS()
+            # if self.driver_exe_path:
+            #     self.driver = webdriver.PhantomJS(executable_path = self.driver_exe_path)
+            # else:
+            #     self.driver = webdriver.PhantomJS()
+
+            self.driver = webdriver.Chrome(options=self.options)
                 
             index_html = None
 

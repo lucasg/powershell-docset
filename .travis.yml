@@ -9,9 +9,11 @@ env:
     - ARTIFACT_NAME="posh-docsets-$ARTIFACT_VER.zip"
     - MOZ_HEADLESS=1
     - FIREFOX_PATH="`which firefox`"
+    - CHROME_VERSION="`/usr/bin/google-chrome --version | awk '{print $3}'`"
 
 addons:
   firefox: latest
+  chrome: stable
 
 deploy:
   provider: releases
@@ -41,10 +43,15 @@ install:
 - pip install selenium requests bs4
 
 before_install:
-  - wget https://github.com/mozilla/geckodriver/releases/download/v0.24.0/geckodriver-v0.24.0-linux64.tar.gz
-  - mkdir geckodriver
-  - tar -xzf geckodriver-v0.24.0-linux64.tar.gz -C geckodriver
-  - export PATH=$PATH:$PWD/geckodriver
+  - wget -N http://chromedriver.storage.googleapis.com/$CHROME_VERSION/chromedriver_linux64.zip
+  - unzip chromedriver_linux64.zip
+  - chmod +x chromedriver
+  - export PATH=$PATH:$PWD/
+
+  # - wget https://github.com/mozilla/geckodriver/releases/download/v0.24.0/geckodriver-v0.24.0-linux64.tar.gz
+  # - mkdir geckodriver
+  # - tar -xzf geckodriver-v0.24.0-linux64.tar.gz -C geckodriver
+  # - export PATH=$PATH:$PWD/geckodriver
 
 script:
 - mkdir -p Powershell
