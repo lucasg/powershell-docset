@@ -279,6 +279,8 @@ def rewrite_soup(configuration : Configuration, soup, html_path : str, documents
         # go back to module
         if href == "./?view=powershell-%s" % configuration.powershell_version:
             fixed_href = "./%s.html" % link.text
+        elif href == "./?view=windowsserver2019-ps":
+            fixed_href = "./%s.html" % link.text
 
         # go to a cmdlet page
         else:
@@ -293,6 +295,11 @@ def rewrite_soup(configuration : Configuration, soup, html_path : str, documents
             logging.debug("link rewrite : %s -> %s " % ( href, fixed_href))
             link['href'] = fixed_href
 
+
+    # remove link to external references since we can't support it
+    for abs_href in soup.findAll("a", { "data-linktype" : "absolute-path"}):
+        abs_href.replace_with(abs_href.text)
+
     # remove unsupported nav elements
     nav_elements = [
         ["nav"  , { "class" : "doc-outline", "role" : "navigation"}],
@@ -304,6 +311,12 @@ def rewrite_soup(configuration : Configuration, soup, html_path : str, documents
         ["div"  , { "class" : "pageActions"}],
         ["div"  , { "class" : "container footerContainer"}],
         ["div"  , { "class" : "dropdown-container"}],
+        ["div"  , { "class" : "page-action-holder"}],
+        ["div"  , { "aria-label" : "Breadcrumb", "role" : "navigation"}],
+        ["div"  , { "data-bi-name" : "rating"}],
+        ["div"  , { "data-bi-name" : "feedback-section"}],
+        ["section" , { "class" : "feedback-section", "data-bi-name" : "feedback-section"}],
+        ["footer" , { "data-bi-name" : "footer", "id" : "footer"}],
     ]
 
     for nav in nav_elements:
@@ -392,6 +405,9 @@ def rewrite_index_soup(configuration : Configuration, soup, index_html_path : st
         ["div"  , { "class" : "dropdown-container"}],
         ["div"  , { "class" : "container footerContainer"}],
         ["div"  , { "data-bi-name" : "header", "id" : "headerAreaHolder"}],
+        ["div"  , { "class" : "header-holder"}],
+        ["div"  , { "id" : "action-panel"}],
+        ["div"  , { "id" : "api-browser-search-field-container"}],
     ]
 
     for nav in nav_elements:
