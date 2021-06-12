@@ -43,7 +43,7 @@ install:
 - pip install selenium requests bs4
 
 before_install:
-  - wget -N http://chromedriver.storage.googleapis.com/$CHROME_VERSION/chromedriver_linux64.zip
+  - wget -N http://chromedriver.storage.googleapis.com/${CHROME_VERSION}/chromedriver_linux64.zip
   - unzip chromedriver_linux64.zip
   - chmod +x chromedriver
   - export PATH=$PATH:$PWD/
