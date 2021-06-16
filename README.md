@@ -18,6 +18,7 @@
 - [v0.4 -- user contributed docset](https://github.com/lucasg/powershell-docset/releases/tag/v0.4)
 - [v0.5 -- versionned docsets](https://github.com/lucasg/powershell-docset/releases/tag/v0.5)
 - [v0.6 -- windows 10 modules documentation](https://github.com/lucasg/powershell-docset/releases/tag/v0.6)
+- [v0.7.2 -- powershell 7.1 documentation](https://github.com/lucasg/powershell-docset/releases/tag/v0.7.2)
 
 ## Installation & Execution
 
@@ -39,7 +40,7 @@
 5. Start scraping by typing : `posh-to-dash.py --output=$outputfile --version=6 --temporary`
 
 - if `--output` is not provided, `posh-to-dash.py` will output "Powershell.tgz' into the working directory
-- the `--version` switch support Powershell API versions `3.0`, `4.0`, `5.0`, `5.1` and `6` (default)
+- the `--version` switch support only Powershell API versions `7.0`, `7.1` (default) and `7.2` , the rest are obsolete by Microsoft.
 - `--temporary` specify to download the web scraping resources in a temporary folder instead of clobbering the current directory. However if the download fail, the results will be thrown out.
 
 **NOTE: The process takes 15+ minutes to run. The more versions you download increases the time.**
